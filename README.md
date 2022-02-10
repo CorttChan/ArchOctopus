@@ -1,7 +1,7 @@
 
 
 # ArchOctopus -- 建筑师收集助手
-![Profile image for ArchOctopus](./gui/resource/icons/octopus_icon.png)
+![Profile image for ArchOctopus](./gui/resource/icons/profile-160x.png)
 
 <!-- PROJECT SHIELDS -->
 
@@ -51,13 +51,13 @@ python3 main.py
 ```
 
 ## 演示
-![下载演示](./gui/resource/icons/octopus_icon.png)
+![下载演示](./demo/octopus_icon.png)
 
-![设置演示](./gui/resource/icons/octopus_icon.png)
+![设置演示](./demo/octopus_icon.png)
 
-![同步演示](./gui/resource/icons/octopus_icon.png)
+![同步演示](./demo/octopus_icon.png)
 
-![后台演示](./gui/resource/icons/octopus_icon.png)
+![后台演示](./demo/octopus_icon.png)
 
 
 ## 如何编写自己的解析插件

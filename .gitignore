@@ -141,8 +141,9 @@ dmypy.json
 /gui/resource/donate/old/
 /gui/resource/donate/raw/
 /pdf/
+/data/
+/log/
 # 本地排除文件
-log/*
 gui/mac_gui.py
 gui/mac_gui.wxg
 gui/msw_gui.py
