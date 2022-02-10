@@ -127,3 +127,23 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# 本地排除文件夹
+/.idea
+/samples/
+/tmp/
+/release/
+/wkhtmltox/
+/test/
+/example/
+/alien_venv/
+/home_venv/
+/gui/resource/donate/old/
+/gui/resource/donate/raw/
+/pdf/
+# 本地排除文件
+log/*
+gui/mac_gui.py
+gui/mac_gui.wxg
+gui/msw_gui.py
+gui/msw_gui.wxg
