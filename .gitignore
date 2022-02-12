@@ -148,4 +148,3 @@ gui/mac_gui.py
 gui/mac_gui.wxg
 gui/msw_gui.py
 gui/msw_gui.wxg
-*.bak

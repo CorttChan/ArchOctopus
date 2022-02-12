@@ -1,10 +1,10 @@
 
-
-# ArchOctopus -- 建筑师收集助手
 ![Profile image for ArchOctopus](./gui/resource/icons/profile-160x.png)
 
-<!-- PROJECT SHIELDS -->
+# ArchOctopus -- 建筑师收集助手
+#### ArchOctopus 致力于成为快速收集设计素材的通用性工具  
 
+<!-- PROJECT SHIELDS -->
 [![GitHub license](https://img.shields.io/github/license/CorttChan/ArchOctopus?style=flat-square)](https://github.com/CorttChan/ArchOctopus/blob/main/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/CorttChan/ArchOctopus?style=flat-square&logo=github)](https://github.com/CorttChan/ArchOctopus/issues)
 [![GitHub forks](https://img.shields.io/github/forks/CorttChan/ArchOctopus?style=flat-square&logo=github)](https://github.com/CorttChan/ArchOctopus/network)
@@ -12,7 +12,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/CorttChan/ArchOctopus.svg?style=flat-square&logo=github)](https://github.com/CorttChan/ArchOctopus/releases/latest)
 [![GitHub downloads](https://img.shields.io/github/downloads/CorttChan/ArchOctopus/total.svg?style=flat-square&logo=github)](https://github.com/CorttChan/ArchOctopus/releases/latest)
 
-### ArchOctopus 致力于成为快速收集设计素材的通用性工具  
+
 
 ## 主要功能:
 1. 简洁的用户界面, 方便的多任务管理

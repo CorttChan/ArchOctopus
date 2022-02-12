@@ -4,7 +4,7 @@ url: https://www.artstation.com/
 """
 
 # name: artstation.py
-# version: 0.0.2
+# version: 0.0.1
 # date: 2022/2/9 21:17
 # desc:
 
