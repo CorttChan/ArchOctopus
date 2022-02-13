@@ -1269,8 +1269,9 @@ class AoTagsPopupCtrl(wx_gui.TagsPopupCtl):
         super(AoTagsPopupCtrl, self).__init__(parent, flags=wx.BORDER_SIMPLE)
         self.tags = args
 
-        # self.Bind(wx.EVT_ACTIVATE, self.on_dismiss)
-        # self.Bind(wx.EVT_TEXT_ENTER, self.on_enter_dismiss, self.tags_edit_ctrl)
+        if wx.Platform == '__WXMAC__':
+            self.Bind(wx.EVT_ACTIVATE, self.on_dismiss)
+            self.Bind(wx.EVT_TEXT_ENTER, self.on_enter_dismiss, self.tags_edit_ctrl)
 
     def on_enter_dismiss(self, event):
         self.Dismiss()
