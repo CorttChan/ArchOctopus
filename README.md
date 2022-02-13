@@ -51,6 +51,8 @@ python3 main.py
 ```
 
 ## 演示
+![下载演示](./demo/gui_mac.png)
+
 ![下载演示](./demo/gui_main.png)
 
 ![设置演示](./demo/gui_sync.png)
