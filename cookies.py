@@ -657,7 +657,14 @@ def load(domain_name=""):
     Optionally pass in a domain name to only load cookies from the specified domain
     """
     cj = http.cookiejar.CookieJar()
-    for cookie_fn in [chrome, chromium, opera, brave, edge, firefox, se360, sogou]:
+
+    if sys.platform == 'win32':
+        browser_list = [chrome, chromium, opera, brave, edge, firefox, se360, sogou]
+    # 应该没人石乐志会在mac上用360和sogou吧，既不想在自己的mac上装这两个测试，也不想麻烦装虚拟机，就这样吧。
+    else:
+        browser_list = [chrome, chromium, opera, brave, edge, firefox]
+
+    for cookie_fn in browser_list:
         try:
             for cookie in cookie_fn(domain_name=domain_name):
                 cj.set_cookie(cookie)

@@ -19,7 +19,6 @@ import cookies
 from constants import APP_NAME
 from download import Downloader
 from plugins import GeneralParser
-# from plugins import BaseParser, filter_duplicate
 
 
 # Constant
@@ -93,8 +92,13 @@ class Plugin:
         #     rule = cfg.Read(cfg_path)
         #     return get_custom_class(plugin_name, rule)     # 返回自定义规则解析类
 
-        if plugin_name+".py" in os.listdir("plugins"):
+        bundle_dir = os.path.abspath(os.path.dirname(__file__))
+        # bundle_dir = wx.GetApp().get_install_dir()
+        plugins_path = os.path.join(bundle_dir, "plugins")
+        logger.debug("载入解析模块路径: %s", plugins_path)
+        if plugin_name+".py" in os.listdir(plugins_path):
             plugin = __import__("plugins." + plugin_name, fromlist=[plugin_name])
+            logger.debug("载入解析模块: %s", plugin_name)
             return plugin.Parser        # 返回预定义解析模块
         else:
             return GeneralParser        # 返回通用解析模块
@@ -128,7 +132,7 @@ class TaskItem:
         try:
             self.cookies = cookies.load()
         except Exception as e:
-            # logger.error(e)
+            logger.error("浏览器cookies载入失败: %s", e)
             self.cookies = None
         # 线程池
         self.pool = []
@@ -151,6 +155,7 @@ class TaskItem:
         # 解析线程
         domain = get_domain_from_url(self.parent.task_info["url"])
         self.parent.task_info["domain"] = domain
+        logger.debug("创建解析线程. \n任务参数: %s", self.parent.task_info)
         parser = Plugin.manager.get_parser(name=domain)
         parse_thread = parser(self.parent,
                               self.parent.task_info["url"],
@@ -164,6 +169,7 @@ class TaskItem:
         parse_thread.setDaemon(True)
         parse_thread.start()
         self.pool.append(parse_thread)
+        logger.debug("执行解析线程.")
         # 下载线程池
         for _download_thread in range(self.download_thread_count):
             _download_thread = Downloader(self.parent,

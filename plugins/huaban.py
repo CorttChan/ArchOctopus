@@ -134,7 +134,7 @@ class Parser(BaseParser):
         html = response.text
         page_json = get_page_json(html, contain="pin")
         item_data = {
-            "name": page_json["pin_id"],
+            "name": str(page_json["pin_id"]),
             "size": (page_json["file"]["width"], page_json["file"]["height"]),
             "item_url": get_pin_url(page_json),
         }

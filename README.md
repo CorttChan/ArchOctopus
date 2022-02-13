@@ -51,13 +51,15 @@ python3 main.py
 ```
 
 ## 演示
-![下载演示](./demo/octopus_icon.png)
+![下载演示](./demo/gui_main.png)
 
-![设置演示](./demo/octopus_icon.png)
+![设置演示](./demo/gui_sync.png)
 
-![同步演示](./demo/octopus_icon.png)
+![同步演示](./demo/gui_history.png)
 
-![后台演示](./demo/octopus_icon.png)
+![后台演示](./demo/gui_setup1.png)
+![后台演示](./demo/gui_setup2.png)
+![后台演示](./demo/gui_setup3.png)
 
 
 ## 如何编写自己的解析插件
@@ -77,7 +79,7 @@ class Parser(BaseParser):
         super(Parser, self).__init__(*args, **kwargs)
         
         # 指定改解析域名的友好名称,作为该域名的主目录. (可选)
-        self.friend_name = "花瓣网"
+        self.friend_name = "xxx"
     
     # 重写route函数,根据输入的url判定解析规则
     def route(self, *args, **kwargs):

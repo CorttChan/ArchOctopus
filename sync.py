@@ -71,7 +71,6 @@ class SyncDownload(threading.Thread):
         else:
             name, suffix = utils.get_name_from_url(url)
         folder = os.path.join(self.sync_dir, site.capitalize(), utils.cleanup(board_name), sub_dir or "")
-
         # 创建路径
         os.makedirs(folder, exist_ok=True)
         tmp_file = os.path.join(folder, name+'.tmp')
@@ -971,11 +970,13 @@ class AoSync:
             preload_thread.start()
             self.logger.info("账户信息检测线程启动")
 
-    def start(self):
+    def start(self, sync_dir=None):
         """
         开启同步
         :return:
         """
+        # 首次同步时，配置文件中没有sync_dir值, 通过参数传入
+        self.sync_dir = sync_dir if sync_dir else self.sync_dir
         # 线程事件初始化为True
         self.running_event.set()
         try:

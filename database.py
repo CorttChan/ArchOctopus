@@ -162,7 +162,7 @@ class AoDatabase(threading.Thread):
             else:
                 try:
                     cursor.execute(req, arg)
-                except (sqlite3.OperationalError, sqlite3.ProgrammingError, ValueError) as e:
+                except (sqlite3.OperationalError, sqlite3.IntegrityError, sqlite3.ProgrammingError, ValueError) as e:
                     self.logger.error("数据库错误: %s", e)
                     if res:
                         res.put(tuple())

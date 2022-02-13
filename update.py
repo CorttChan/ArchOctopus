@@ -10,7 +10,7 @@ import logging
 import wx
 
 from constants import APP_NAME
-from utils import retry
+# from utils import retry
 
 # local test
 TEST_UPDATE_URL = "http://192.168.11.12/release"
@@ -21,9 +21,9 @@ GITHUB_PLUGIN_VERSION_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/p
 GITHUB_PLUGIN_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/plugins/{plugin_name}"
 
 # gitee.com
-GITEE_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/master/release_version"
-GITEE_PLUGIN_VERSION_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/master/plugin_version"
-GITEE_PLUGIN_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/master/plugins/{plugin_name}"
+GITEE_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/release_version"
+GITEE_PLUGIN_VERSION_URL = "https://gitee.com/corttchan/ArchOctopus/raw/main/plugin_version"
+GITEE_PLUGIN_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/plugins/{plugin_name}"
 
 
 class Update(threading.Thread):
@@ -37,7 +37,7 @@ class Update(threading.Thread):
 
         self.logger = logging.getLogger(APP_NAME)
 
-    @retry(times=3)
+    # @retry(times=3)
     def run(self):
         for url in (GITEE_UPDATE_URL, GITHUB_UPDATE_URL):
             req = httpx.get(url)
@@ -47,12 +47,12 @@ class Update(threading.Thread):
             if LooseVersion(info["version"]) > LooseVersion(wx.GetApp().version):
                 update_info = {
                     "version": info.get("version"),
-                    "description": info.get("description"),
+                    "desc": info.get("desc"),
                     "url": info.get("url"),
-                    "notes_link": info.get("notes_link"),
+                    "notes": info.get("notes"),
                     "date": info.get("date"),
                 }
-                wx.CallAfter(self.parent.check_update, **update_info)
+                wx.CallAfter(self.parent.call_update_notice, **update_info)
             break
 
 
@@ -77,8 +77,8 @@ class PluginUpdate(threading.Thread):
 
         self.logger = logging.getLogger(APP_NAME)
 
-    @retry(times=3)
-    def download_plugin(self, plugin_name, plugin_file):
+    @staticmethod
+    def download_plugin(plugin_name, plugin_file):
         gitee_url = GITEE_PLUGIN_UPDATE_URL.format(plugin_name=plugin_name)
         github_url = GITHUB_PLUGIN_UPDATE_URL.format(plugin_name=plugin_name)
 
@@ -92,10 +92,15 @@ class PluginUpdate(threading.Thread):
             except PermissionError:
                 break
             else:
-                break
+                return True
 
-    @retry(times=3)
     def run(self):
+        bundle_dir = wx.GetApp().get_install_dir()
+        plugins_path = os.path.join(bundle_dir, "plugins")
+        self.logger.debug("update_plugins_path: %s", plugins_path)
+
+        plugins_update_result = {}
+
         for url in (GITEE_PLUGIN_VERSION_URL, GITHUB_PLUGIN_VERSION_URL):
             req = httpx.get(url)
             req.raise_for_status()
@@ -103,16 +108,26 @@ class PluginUpdate(threading.Thread):
             info: dict = req.json()
 
             for _name, _version in info.items():
-                plugin_file = os.path.join("plugins", _name)
+                plugin_file = os.path.join(plugins_path, _name)
                 # 更新旧解析文件
                 if os.path.isfile(plugin_file):
                     plugin_version = load_plugin_version(plugin_file)
                     if LooseVersion(_version) > LooseVersion(plugin_version):
                         self.logger.debug("插件更新: %s v%s -> v%s", _name, plugin_version, _version)
-                        self.download_plugin(_name, plugin_file)
+                        if self.download_plugin(_name, plugin_file):
+                            plugins_update_result[_name] = (plugin_version, _version)
+                        else:
+                            self.logger.debug("插件下载失败: %s v%s -> v%s", _name, plugin_version, _version)
                 # 下载新解析文件
                 else:
-                    self.logger.debug("插件下载: %s v%s", _name, _version)
-                    self.download_plugin(_name, plugin_file)
+                    self.logger.debug("新插件下载: %s (v%s)", _name, _version)
+                    if self.download_plugin(_name, plugin_file):
+                        plugins_update_result[_name] = (None, _version)
+                    else:
+                        self.logger.debug("新插件下载失败: %s (v%s)", _name, _version)
 
             break
+
+        # 插件更新信息提示
+        if plugins_update_result:
+            wx.CallAfter(self.parent.call_upgrade_notice, **plugins_update_result)

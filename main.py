@@ -4,6 +4,7 @@ ArchOctopus main
 """
 from urllib.parse import urlparse
 import os
+import re
 import logging.config
 import string
 from queue import Queue
@@ -23,7 +24,7 @@ if wx.Platform == '__WXMSW__':
 else:
     from gui import mac_gui as wx_gui
 
-from gui import custom_outlinebtn, MyBitmap, TagsPopupCtl, svg_bitmap
+from gui import custom_outlinebtn, MyBitmap, svg_bitmap
 from gui import SYNC, SYNC_DISABLE, PAUSE, RESTART
 from task import TaskItem
 from database import AoDatabase
@@ -93,29 +94,39 @@ class SettingValidator(wx.Validator):
         self.Bind(wx.EVT_CHAR, self.on_char)
 
     def Clone(self):
-        return SettingValidator(self.cfg, self.path, self.value_type, self.flag)
+        return SettingValidator(self.cfg, self.path, self.value_type, self.flag, self.default)
 
     def Validate(self, parent):
         return True
 
     def TransferToWindow(self):
         win = self.GetWindow()
-        if self.value_type == "str":
-            value = self.cfg.Read(self.path)
-        elif self.value_type == "int":
-            value = self.cfg.ReadInt(self.path)
-        elif self.value_type == "bool":
-            value = self.cfg.ReadBool(self.path)
-        else:
-            return True
 
-        value = self.default if not value and self.default else value
-        win.SetValue(value)
+        if not self.cfg.HasEntry(self.path) and self.default:
+            value = self.default
+        else:
+            if self.value_type == "str":
+                value = self.cfg.Read(self.path)
+            elif self.value_type == "int":
+                value = self.cfg.ReadInt(self.path)
+            elif self.value_type == "bool":
+                value = self.cfg.ReadBool(self.path)
+            else:
+                return True
+
+        try:
+            win.SetValue(value)
+        except AttributeError:
+            win.SetLabel(value)
         return True
 
     def TransferFromWindow(self):
         win = self.GetWindow()
-        value = win.GetValue()
+        try:
+            value = win.GetValue()
+        except AttributeError:
+            value = win.GetLabel()
+
         if self.value_type == "str":
             self.cfg.Write(self.path, value)
         elif self.value_type == "int":
@@ -125,12 +136,20 @@ class SettingValidator(wx.Validator):
         return True
 
     def on_char(self, event):
-        key = chr(event.GetKeyCode())
-        if self.flag == "digit" and key in string.ascii_letters + string.punctuation:
+        key = event.GetKeyCode()
+
+        if not self.flag or key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            event.Skip()
             return
-        if self.flag == "ip" and key in string.ascii_letters + string.punctuation.replace(".", ""):
+
+        if self.flag == "digit" and chr(key) in string.digits:
+            event.Skip()
             return
-        event.Skip()
+
+        if not wx.Validator.IsSilent():
+            wx.Bell()
+
+        return
 
 
 class AoMainFrame(wx_gui.MyFrame):
@@ -156,7 +175,7 @@ class AoMainFrame(wx_gui.MyFrame):
             self.sync.start()
             self.sync_timer.Start(interval)
         else:
-            wx.CallLater(3000, self.sync.start_preload)     # 延时执行账户信息检测, 避免启动等待时间过长
+            wx.CallLater(5000, self.sync.start_preload)     # 延时执行账户信息检测, 避免启动等待时间过长
             # self.sync.start_preload()   # 账户信息检测
 
         self.is_auto_clip = False   # 自动粘贴板
@@ -164,15 +183,20 @@ class AoMainFrame(wx_gui.MyFrame):
         self.running_task_count = 0  # 用于判断是否存在正在运行的Task实例
         self.proxies = None
 
-        self.available_update_url = ""  # 可用更新链接
-        self.available_update_version = ""  # 可用更新版本
+        # self.available_update_url = ""  # 可用更新链接
+        # self.available_update_version = ""  # 可用更新版本
 
         self.tbicon = TBicon(self)
         self.url_ctrl.SetHint("输入收集网址...")
-        self.url_ctrl.SetFocus()
+        # self.url_ctrl.SetFocus()
 
         self.init_load_history()
         self.config_effect()
+
+        # MACOS 菜单
+        if wx.Platform == '__WXMAC__':
+            self.build_menu_bar()
+        # self.build_menu_bar()
 
         # 更新插件
         check_plugin_thread = PluginUpdate(self)
@@ -186,7 +210,6 @@ class AoMainFrame(wx_gui.MyFrame):
 
         if wx.Platform == '__WXMSW__':
             self.Bind(wx.EVT_ICONIZE, self.on_iconize)
-        # elif wx.Platform == '__WXMAC__':
 
         self.start_ctrl.Bind(wx.EVT_LEFT_DOWN, self.on_start)
         self.url_ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_start)
@@ -197,6 +220,24 @@ class AoMainFrame(wx_gui.MyFrame):
         self.author_st.Bind(wx.EVT_LEFT_DCLICK, self.on_about)
 
         self.Bind(wx.EVT_TIMER, self.on_sync_timer, self.sync_timer)
+
+        # 消息提醒测试
+        # fake_upgrade_info = {
+        #     "example_01.py": ("0.0.2", "0.0.5"),
+        #     "exampledd_02.py": ("0.0.1", "0.0.10"),
+        #     "examplexxx_03.py": ("0.0.11", "0.0.15"),
+        #     "example_04.py": (None, "0.0.5"),
+        #     "examplelogg_05.py": ("0.0.2", "0.0.3"),
+        #     "example_06.py": (None, "0.0.3"),
+        #     "exam_07.py": (None, "0.0.1"),
+        # }
+        # fake_update_info = {
+        #     "version": "3.0.0",
+        #     "date": "2022/02/12"
+        # }
+        #
+        # wx.CallLater(3000, self.call_upgrade_notice, **fake_upgrade_info)
+        # wx.CallLater(3000, self.call_update_notice, **fake_update_info)
 
     def init_load_history(self):
         """初始化载入历史记录"""
@@ -241,9 +282,9 @@ class AoMainFrame(wx_gui.MyFrame):
 
         return task_panel
 
-    def check_update(self, **kwargs):
-        self.available_update_url = kwargs.get("url")
-        self.available_update_version = kwargs.get("version")
+    def call_update_notice(self, **kwargs):
+        # self.available_update_url = kwargs.get("url")
+        # self.available_update_version = kwargs.get("version")
 
         _icon = wx.NullIcon
         _icon.CopyFromBitmap(MyBitmap(wx_gui.APP_ABOUT_ICON))
@@ -251,17 +292,52 @@ class AoMainFrame(wx_gui.MyFrame):
         # link_btn_id = wx.NewIdRef()
         # self.Bind(wx.adv.EVT_NOTIFICATION_MESSAGE_ACTION, self.on_open_update_link, link_btn_id)
 
+        self.logger.debug("新版本信息: %s-%s", kwargs.get("version"), kwargs.get("date"))
         notify = wx.adv.NotificationMessage(
             title="ArchOctopus 新版本可供更新！",
             message="最新版本: {}\n发布日期: {}".format(kwargs.get("version"), kwargs.get("date")),
-            parent=None)
+            parent=None,
+            # flags=wx.ICON_INFORMATION
+        )
 
         notify.SetIcon(_icon)
-        # notify.UseTaskBarIcon(self.tbicon)
+
+        if wx.Platform == '__WXMSW__':      # only works on MSW
+            notify.UseTaskBarIcon(self.tbicon)
 
         # notify.AddAction(link_btn_id, "现在更新")
 
-        notify.Show(timeout=notify.Timeout_Never)
+        # notify.Show(timeout=notify.Timeout_Never)
+        notify.Show(timeout=notify.Timeout_Auto)
+
+    def call_upgrade_notice(self, **kwargs):
+        info = "-- 解析插件在线更新 --\n\n\n"
+
+        update_plugins = []
+        new_plugins = []
+        for _name, _value in kwargs.items():
+            _local_version, _new_version = _value
+            if _local_version is None:
+                new_plugins.append("   {}: ({})\n".format(_name, _new_version))
+            else:
+                update_plugins.append("   {}: ({}  -->  {})\n".format(_name, _local_version, _new_version))
+
+        if new_plugins:
+            info += "新增插件: \n"
+            info += "".join(new_plugins)
+        if update_plugins:
+            info += "\n升级插件: \n"
+            info += "".join(update_plugins)
+
+        dlg = wx.MessageDialog(self, info, "插件更新成功", wx.OK | wx.ICON_INFORMATION)
+        dlg.SetFont(wx.Font(13, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, 0, 'Apple Braille'))
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def check_update(self, event):
+        check_update_thread = Update(self)
+        check_update_thread.setDaemon(True)
+        check_update_thread.start()
 
     def config_effect(self):
         # 检查自动粘贴板设置
@@ -278,8 +354,8 @@ class AoMainFrame(wx_gui.MyFrame):
                 self.debug_dlg.Show()
                 # 添加DebugFrameHandler
                 self.frame_handler = DebugFrameHandler(self.debug_dlg.log_tc)
+                self.frame_handler.setLevel("DEBUG")
                 self.logger.addHandler(self.frame_handler)
-
         else:
             if hasattr(self, "debug_dlg"):
                 self.logger.removeHandler(self.frame_handler)
@@ -288,9 +364,7 @@ class AoMainFrame(wx_gui.MyFrame):
                 del self.frame_handler
         # 检查更新
         if self.cfg.ReadBool("/General/auto_update", defaultVal=False):
-            check_update_thread = Update(self)
-            check_update_thread.setDaemon(True)
-            check_update_thread.start()
+            self.check_update(None)
         # 检查刷新代理信息
         proxy_host = self.cfg.Read("/Proxy/host", defaultVal="")
         proxy_port = self.cfg.Read("/Proxy/port", defaultVal="")
@@ -302,6 +376,96 @@ class AoMainFrame(wx_gui.MyFrame):
                 self.proxies = f"http://{proxy_user}:{proxy_password}@{proxy_host}:{proxy_port}"
             else:
                 self.proxies = f"http://{proxy_host}:{proxy_port}"
+
+    def build_menu_bar(self):
+        main_menu = wx.MenuBar()
+
+        # 文件菜单
+        menu = wx.Menu()
+
+        about_item = wx.MenuItem(menu, wx.ID_ABOUT, '&关于 ArchOctopus', '打开关于面板')
+        menu.Append(about_item)
+        self.Bind(wx.EVT_MENU, self.on_about, about_item)
+
+        setup_item = wx.MenuItem(menu, wx.ID_PREFERENCES, '&偏好设置\tCtrl-,', '打开设置面板')
+        menu.Append(setup_item)
+        self.Bind(wx.EVT_MENU, self.on_open_setup_dlg, setup_item)
+
+        history_item = wx.MenuItem(menu, 101, '&查看历史', '打开历史面板')
+        menu.Append(history_item)
+        self.Bind(wx.EVT_MENU, self.on_open_history_dlg, history_item)
+
+        if wx.Platform == '__WXMSW__':
+            menu.AppendSeparator()
+
+        exit_item = wx.MenuItem(menu, wx.ID_EXIT, '&退出 \tCtrl-Q', '退出')
+        menu.Append(exit_item)
+        self.Bind(wx.EVT_MENU, self.on_menu_exit, exit_item)
+
+        main_menu.Append(menu, '&文件')
+
+        if wx.Platform == '__WXMAC__':
+            # 修改MacOs系统菜单
+            apple_menu = main_menu.OSXGetAppleMenu()
+
+            apple_menu.FindItemById(5250).SetItemLabel('&隐藏 {}\tCtrl-H'.format(constants.APP_NAME))
+            apple_menu.FindItemById(5253).SetItemLabel('&服务')
+            apple_menu.FindItemById(5251).SetItemLabel('&隐藏其他\tAlt+Ctrl+H')
+            apple_menu.FindItemById(5252).SetItemLabel('&显示全部')
+            apple_menu.FindItemById(5006).SetItemLabel('&退出 {}\tCtrl-Q'.format(constants.APP_NAME))
+
+        # 同步菜单
+        menu = wx.Menu()
+        item = menu.Append(201, '&Archdaily', "https://www.pinterest.com/")
+        self.Bind(wx.EVT_MENU, self.on_menu_sync, item)
+        item = menu.Append(202, '&Huaban', "https://www.pinterest.com/")
+        self.Bind(wx.EVT_MENU, self.on_menu_sync, item)
+        item = menu.Append(203, '&Pinterest', "https://www.pinterest.com/")
+        self.Bind(wx.EVT_MENU, self.on_menu_sync, item)
+        main_menu.Append(menu, '&同步')
+
+        # 赞助菜单
+        menu = wx.Menu()
+        item = menu.Append(301, "&赞助", "")
+        self.Bind(wx.EVT_MENU, self.on_open_donate_link, item)
+        main_menu.Append(menu, '&赞助')
+
+        # 帮助菜单
+        menu = wx.Menu()
+        item = menu.Append(401, '&官方网站', constants.HOME_URL)
+        self.Bind(wx.EVT_MENU, self.on_menu_link, item)
+        menu.AppendSeparator()
+        item = menu.Append(402, '&Gitee-源代码', constants.GITEE_URL)
+        self.Bind(wx.EVT_MENU, self.on_menu_link, item)
+        item = menu.Append(403, '&Github-源代码', constants.GITHUB_URL)
+        self.Bind(wx.EVT_MENU, self.on_menu_link, item)
+        menu.AppendSeparator()
+        item = menu.Append(404, '&问题反馈', constants.FEEDBACK_URL)
+        self.Bind(wx.EVT_MENU, self.on_menu_link, item)
+        item = menu.Append(405, '&授权协议', constants.LICENSE)
+        self.Bind(wx.EVT_MENU, self.on_menu_link, item)
+        menu.AppendSeparator()
+        item = menu.Append(406, '&检查更新', "运行检查更新线程")
+        self.Bind(wx.EVT_MENU, self.check_update, item)
+        main_menu.Append(menu, '&帮助')
+
+        self.SetMenuBar(main_menu)
+
+    # Menu methods
+    def on_menu_exit(self, event):
+        self.Close()
+
+    # Menu methods
+    def on_menu_sync(self, event):
+        # select_page = envet.GetEventObject().GetItemLabel()
+        select_page = event.GetEventObject().GetLabelText(event.GetId())
+        sync_dlg = AoSyncDlg(self, select_page=select_page)
+        sync_dlg.ShowModal()
+        sync_dlg.Destroy()
+
+    def on_menu_link(self, event):
+        link = event.GetEventObject().FindItemById(event.GetId()).GetHelp()
+        wx.LaunchDefaultBrowser(link, flags=0)
 
     def on_iconize(self, event):
         is_minimized = self.cfg.ReadBool("/General/minimized", defaultVal=True)
@@ -325,14 +489,16 @@ class AoMainFrame(wx_gui.MyFrame):
         """窗口激活时, 自动从剪贴板中拷贝url到输入控件"""
         if event.GetActive() and self.is_auto_clip:
             url_data = wx.URLDataObject()
-            if wx.TheClipboard.Open() and wx.TheClipboard.GetData(url_data):
-                url = url_data.GetURL().strip(" \'\"[]<>")
-                if self.url_ctrl.IsEmpty() and is_url(url):
-                    if url != self.previous_url:
-                        self.url_ctrl.SetValue(url)
-                        self.previous_url = url
+            data = None
+            if wx.TheClipboard.Open():
+                data = wx.TheClipboard.GetData(url_data)
                 wx.TheClipboard.Close()
-            self.url_ctrl.SetFocus()
+            if data:
+                url = url_data.GetURL().strip(" \'\"[]<>")
+                if self.url_ctrl.IsEmpty() and is_url(url) and url != self.previous_url:
+                    self.url_ctrl.SetValue(url)
+                    self.previous_url = url
+                    self.url_ctrl.SetFocus()
         event.Skip()
 
     def on_close(self, event):
@@ -376,7 +542,10 @@ class AoMainFrame(wx_gui.MyFrame):
             else:
                 if ask_result == wx.ID_YES:
                     target = result[6] or result[5]
-                    wx.LaunchDefaultBrowser(target, flags=0)
+                    if wx.Platform == '__WXMAC__':
+                        os.system(f"open '{target}'")
+                    else:
+                        wx.LaunchDefaultBrowser(target, flags=0)
                 ask_dlg.Destroy()
                 return
         else:
@@ -389,6 +558,7 @@ class AoMainFrame(wx_gui.MyFrame):
         for _item in self.sizer_8.GetChildren():
             _task_panel = _item.GetWindow()
             if _task_panel.task_info["id"] == task_id:
+                self.logger.debug("复用任务_id: %s", task_id)
                 # 重新下载时, 初始化进度条
                 _task_panel.gauge.SetBarColor(wx.Colour(0, 174, 239))
                 _task_panel.gauge_value = 0
@@ -397,6 +567,7 @@ class AoMainFrame(wx_gui.MyFrame):
                 break
         # 创建任务面板
         else:
+            self.logger.debug("创建任务_id: %s", task_id)
             _task_panel = self.create_task_panel(0, id=task_id, url=raw_url)
             _task_panel.run()
 
@@ -454,7 +625,7 @@ class AoAbout(wx_gui.MyAbout):
             self.home_page.GetId(): constants.HOME_URL,
             self.donate_page.GetId(): constants.DONATE_URL,
             self.feedback_page.GetId(): constants.FEEDBACK_URL,
-            self.source_page.GetId(): constants.SOURCE_URL,
+            self.source_page.GetId(): constants.GITHUB_URL,
         }
 
         # Bind event handler
@@ -522,7 +693,7 @@ class AoDonateDlg(wx_gui.DonateDialog):
         btn.SetBackgroundColour(wx.Colour(85, 85, 85))
         event.Skip()
 
-    def on_open_donation_list_page(self, event):
+    def on_sponsor_page(self, event):
         wx.LaunchDefaultBrowser(constants.DONATION_URL, flags=0)
 
 
@@ -531,26 +702,14 @@ class AoSettingDlg(wx_gui.SettingDialog):
         self.cfg = wx.GetApp().cfg
         super(AoSettingDlg, self).__init__(*args, **kwds)
 
-        # 判断是否有可用更新
-        if self.GetParent().available_update_url:
-            # available_version = self.GetParent().available_update_version
-            # info = "更新可用: " + available_version
-            self.available_update_link.SetLabel("更新可用: v{}".format(self.GetParent().available_update_version))
-            self.available_update_link.SetURL(self.GetParent().available_update_url)
+        # # 判断是否有可用更新
+        # if self.GetParent().available_update_url:
+        #     self.available_update_link.SetLabel("更新可用: v{}".format(self.GetParent().available_update_version))
+        #     self.available_update_link.SetURL(self.GetParent().available_update_url)
 
-            # available_update_link = wx.adv.HyperlinkCtrl(
-            #     self.general_panel,
-            #     label="更新可用: {}".format(self.GetParent().available_update_version),
-            #     url=self.GetParent().available_update_url)
-            # # sizer = self.update_toggle_ctrl.GetContainingSizer()
-            # self.sizer_17.Add(available_update_link, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 140)
-
-            # self.sizer_17.Layout()
-
-        # 设置验证器Validator
-        self.download_dir_display.SetValidator(SettingValidator(self.cfg, "/General/download_dir",
+        # 设置验证器Validator,
+        self.download_dir_display.SetValidator(SettingValidator(self.cfg, "/General/download_dir", value_type="str",
                                                                 default=get_docs_dir()))
-        # self.loop_slider.SetValidator(SettingValidator(self.cfg, "/General/loop_max", value_type="int"))
         self.loop_max_ctrl.SetValidator(SettingValidator(self.cfg, "/General/loop_max", value_type="str",
                                                          flag="digit", default="5"))
         self.clip_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/auto_clip", value_type="bool",
@@ -565,8 +724,7 @@ class AoSettingDlg(wx_gui.SettingDialog):
         # 显示日志面板(吸附于主界面左侧)
         self.privacy_debug_ctrl.SetValidator(SettingValidator(self.cfg, "/Privacy/debug", value_type="bool"))
 
-        self.proxy_host_text_ctrl.SetValidator(SettingValidator(self.cfg, "/Proxy/host",
-                                                                value_type="str", flag="ip"))
+        self.proxy_host_text_ctrl.SetValidator(SettingValidator(self.cfg, "/Proxy/host", value_type="str"))
         self.proxy_port_text_ctrl.SetValidator(SettingValidator(self.cfg, "/Proxy/port",
                                                                 value_type="str", flag="digit"))
         self.proxy_auth_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/Proxy/auth", value_type="bool"))
@@ -630,7 +788,7 @@ class AoSettingDlg(wx_gui.SettingDialog):
                            # | wx.DD_CHANGE_DIR
                            )
         if dlg.ShowModal() == wx.ID_OK:
-            self.download_dir_display.SetValue(dlg.GetPath())
+            self.download_dir_display.SetLabel(dlg.GetPath())
         dlg.Destroy()
 
     def creat_sub_rule_boxsizer(self, domain="", reg_exp=""):
@@ -870,7 +1028,10 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
         folder = self.history_dir[index]
         if folder:
             if os.path.exists(folder):
-                wx.LaunchDefaultBrowser(folder, flags=0)
+                if wx.Platform == '__WXMAC__':
+                    os.system(f"open '{folder}'")
+                else:
+                    wx.LaunchDefaultBrowser(folder, flags=0)
             else:
                 wx.MessageBox("目标文件夹被删除或移动", "目录错误", wx.OK | wx.ICON_ERROR, parent=self)
         else:
@@ -915,13 +1076,14 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
 
 class AoSyncDlg(wx_gui.SyncDialog):
 
-    def __init__(self, parent):
+    def __init__(self, parent, select_page: str = ""):
         super(AoSyncDlg, self).__init__(parent)
         self.cfg = wx.GetApp().cfg
         self.con = wx.GetApp().con
 
         self.sync_dir = self.cfg.Read("/Sync/sync_dir")
         self.tabs = ("Archdaily", "Huaban", "Pinterest")
+        self.select_page = select_page
 
         self.cover_queue = Queue()
         self.init_properties()
@@ -960,8 +1122,9 @@ class AoSyncDlg(wx_gui.SyncDialog):
         update_cover_thread.start()
 
         for site in self.tabs:
-            account_panel = AoAccountPanel(self.account_nb)
+            is_select = True if self.select_page == site else False
 
+            account_panel = AoAccountPanel(self.account_nb)
             account_panel.site = site
 
             # 载入账户信息
@@ -978,7 +1141,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
                 account_panel.email.SetLabel(account_info[4] or "")
             else:
                 account_panel.email.SetLabel(f"没有检测到{site}账户信息, \n请确认是否已正常登录")
-                self.account_nb.AddPage(account_panel, site)
+                self.account_nb.AddPage(account_panel, site, select=is_select)
                 continue
 
             # 载入收藏board信息
@@ -1006,7 +1169,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
                     board_panel.state_sb.Show()
                 account_panel.items_sizer.Add(board_panel, 0, wx.ALL | wx.EXPAND, 5)
 
-            self.account_nb.AddPage(account_panel, site)
+            self.account_nb.AddPage(account_panel, site, select=is_select)
         # 封面更新线程退出信号: None
         self.cover_queue.put(None)
 
@@ -1041,7 +1204,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
             self.status_label_1.SetLabel("同步开启")
             # Sync对象定时运行
             interval = self.cfg.ReadInt("/Sync/sync_interval", defaultVal=600000)
-            self.GetParent().sync.start()
+            self.GetParent().sync.start(sync_dir=self.sync_dir)
             self.GetParent().sync_timer.Start(interval)
             self.GetParent().sync_status_ctrl.SetBitmap(svg_bitmap(SYNC, 24, 24, colour=wx.WHITE))
         else:
@@ -1085,7 +1248,10 @@ class AoBoardPanel(wx_gui.BoardPanel):
 
         board_dir = os.path.join(sync_dir, site, self.board_name.GetLabel())
         if os.path.exists(board_dir):
-            wx.LaunchDefaultBrowser(board_dir, flags=0)
+            if wx.Platform == '__WXMAC__':
+                os.system(f"open '{board_dir}'")
+            else:
+                wx.LaunchDefaultBrowser(board_dir, flags=0)
 
     def on_enter_hand(self, event):
         self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
@@ -1094,6 +1260,40 @@ class AoBoardPanel(wx_gui.BoardPanel):
     def on_leave_hand(self, event):
         self.SetCursor(wx.NullCursor)
         event.Skip()
+
+
+class AoTagsPopupCtrl(wx_gui.TagsPopupCtl):
+    """Tag编辑 Popup控件"""
+
+    def __init__(self, parent, *args):
+        super(AoTagsPopupCtrl, self).__init__(parent, flags=wx.BORDER_SIMPLE)
+        self.tags = args
+
+        # self.Bind(wx.EVT_ACTIVATE, self.on_dismiss)
+        # self.Bind(wx.EVT_TEXT_ENTER, self.on_enter_dismiss, self.tags_edit_ctrl)
+
+    def on_enter_dismiss(self, event):
+        self.Dismiss()
+        self.OnDismiss()
+
+    def on_dismiss(self, event):
+        if not event.GetActive():
+            self.Dismiss()
+            self.OnDismiss()
+        event.Skip()
+
+    def OnDismiss(self):
+        # 获取新标签列表
+        tl_value = self.tags_edit_ctrl.GetValue()
+        tags = list(filter(None, re.split("[\\s.,;。，；]+", tl_value)))
+
+        if set(tags) != set(self.tags):
+            # 刷新任务面板标签按钮
+            self.GetParent().update_tags(tags)
+            # 数据库更新
+            wx.CallAfter(self.GetParent().update_tags_db, tags, self.tags)
+            # # 更新任务信息
+            # self.GetParent().task_info["tags"] = tags
 
 
 class AoTaskPanel(wx_gui.TaskPanel):
@@ -1146,7 +1346,7 @@ class AoTaskPanel(wx_gui.TaskPanel):
         for tag in tags:
             tag_btn = custom_outlinebtn.PlateButton(self, label=" {} ".format(tag))
             tag_btn.SetLabelColor(normal=wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT), hlight=wx.WHITE)
-            self.sizer_tags.Add(tag_btn, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+            self.sizer_tags.Add(tag_btn, 0, wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 2)
 
         # # 初始化文件数
         self.imgs_sum.SetLabel("[{} / {}]".format(self.gauge_value, self.task_info.get("total_count", "解析中...")))
@@ -1283,16 +1483,22 @@ class AoTaskPanel(wx_gui.TaskPanel):
 
         if self.task_info.get("tags"):
             pre_tags = self.task_info["tags"].split(", ")
-            popup_win = TagsPopupCtl(self, *pre_tags)
+            popup_win = AoTagsPopupCtrl(self, *pre_tags)
             popup_win.tags_edit_ctrl.SetValue(self.task_info["tags"])
         else:
-            popup_win = TagsPopupCtl(self)
+            popup_win = AoTagsPopupCtrl(self)
 
         btn_size = btn.GetSize()
         popup_size = popup_win.GetSize()
 
         popup_win.Position(pos, (0, btn_size[1]-popup_size[1]))
-        popup_win.Popup()
+
+        if wx.Platform == '__WXMAC__':  # MAC上PopupTransientWindow无法获取焦点，直接调用了OnDismiss函数
+            popup_win.Show()
+            popup_win.Raise()
+            popup_win.tags_edit_ctrl.SetFocus()
+        else:   # 正常调用Popup函数显示
+            popup_win.Popup()
 
     def update_tags(self, tags: list):
         # 更新任务信息
@@ -1304,7 +1510,7 @@ class AoTaskPanel(wx_gui.TaskPanel):
         for tag in tags:
             tag_btn = custom_outlinebtn.PlateButton(self, label=" {} ".format(tag))
             tag_btn.SetLabelColor(normal=wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT), hlight=wx.WHITE)
-            self.sizer_tags.Add(tag_btn, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+            self.sizer_tags.Add(tag_btn, 0, wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 2)
         self.sizer_7.Layout()
 
     def update_tags_db(self, tags: list, pre_tags):
@@ -1408,10 +1614,12 @@ class AoApp(wx_gui.MyApp):
         if self.instance.IsAnotherRunning():
             wx.MessageBox("ArchOctopus 已经启动...", constants.APP_DISPLAY_NAME)
             return False
-
         # --------------
 
         self.locale = wx.Locale(wx.LANGUAGE_DEFAULT)
+
+        # systemOption
+        wx.SystemOptions.SetOption("mac.window-plain-transition", 1)
 
         self.SetAppName(constants.APP_NAME)
         self.SetAppDisplayName(constants.APP_DISPLAY_NAME)
@@ -1420,6 +1628,15 @@ class AoApp(wx_gui.MyApp):
         self.installDir = os.path.abspath(os.path.dirname(__file__))
 
         self.cfg = get_config()
+
+        # macos 系统下需要系统钥匙串访问权限, 首次运行提醒
+        init_running = self.cfg.ReadBool("/General/init", defaultVal=True)
+        if wx.Platform == '__WXMAC__' and init_running:
+            answer = wx.MessageBox("本程序使用需要依赖本机Cookies数据.\n初次使用时，需要获取钥匙串访问权限.",
+                                   "初次使用注意: ",
+                                   wx.OK_DEFAULT)
+            if answer == wx.OK:
+                self.cfg.WriteBool("/General/init", False)
 
         self.con = AoDatabase(db=self.get_database_file())
         # self.con = AoDatabase()
@@ -1451,7 +1668,8 @@ class AoApp(wx_gui.MyApp):
         """
         Returns the database file for ArchOctopus.
         """
-        database_file = os.path.join(self.installDir, "data", "{}.db".format(constants.APP_NAME))
+        # database_file = os.path.join(self.installDir, "{}.db".format(constants.APP_NAME))
+        database_file = os.path.join(get_data_dir(), "{}.db".format(constants.APP_NAME))
         return database_file
 
 
@@ -1461,7 +1679,8 @@ def main():
     :return:
     """
     # logging config
-    log_file = os.path.join(os.path.dirname(__file__), "log", constants.APP_NAME+".log")
+    # log_file = os.path.join(os.path.dirname(__file__), "log", constants.APP_NAME+".log")
+    log_file = os.path.join(os.path.dirname(__file__), constants.APP_NAME+".log")
     log_conf = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -1493,7 +1712,7 @@ def main():
                 "propagate": "no"
             },
             "sync": {
-                "level": "DEBUG",
+                "level": "INFO",
                 "handlers": ["file", "console"],
                 "propagate": "no"
             }
