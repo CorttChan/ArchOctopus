@@ -34,8 +34,8 @@ ArchOctopus的编写始于2016年底，由Python语言编写而成，命名来�
 
 ## 安装与运行
 ### 安装包运行
-- [Window]()
-- [MacOS]()
+- [Window](https://github.com/CorttChan/ArchOctopus/releases/latest)
+- [MacOS](https://github.com/CorttChan/ArchOctopus/releases/latest)
 
 ### 源码运行
 1. python版本 >= 3.6
@@ -120,8 +120,8 @@ class Parser(BaseParser):
 
 
 ## 版本控制
-- [2.0.0.0]()
-- [1.8.4.0]()
+- [2.0.0.0](https://github.com/CorttChan/ArchOctopus/releases/tag/v2.0.0)
+- [1.8.4.0](https://github.com/CorttChan/ArchOctopus/releases/tag/v1.8.4.0)
 
 ## 作者
 [@CorttChan](http://www.cortt.me) - cortt.me@gmail.com
@@ -129,4 +129,4 @@ class Parser(BaseParser):
 ## 版权
 Copyright (c) CorttChan. All rights reserved.
 
-Licensed under the [MIT](LICENSE) license.
+Licensed under the [GPL-3.0](LICENSE) license.
