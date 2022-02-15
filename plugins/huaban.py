@@ -4,8 +4,8 @@ url: https://www.huaban.com
 """
 
 # name: huaban.py
-# version: 0.0.1
-# date: 2022/2/9 21:14
+# version: 0.0.2
+# date: 2022/2/15 14:51
 # desc:
 
 import re
@@ -60,7 +60,7 @@ class Parser(BaseParser):
             for pin in page_json['pins']:
                 item_data = {
                     "sub_dir": kwargs.get("board_title", ""),
-                    "name": pin["pin_id"],
+                    "name": str(pin["pin_id"]),
                     "size": (pin["file"]["width"], pin["file"]["height"]),
                     "item_url": get_pin_url(pin),
                     "item_index_reset": index_start_flag,
@@ -82,7 +82,7 @@ class Parser(BaseParser):
                 for pin in page_json['pins']:
                     item_data = {
                         "sub_dir": kwargs.get("board_title", ""),
-                        "name": pin["pin_id"],
+                        "name": str(pin["pin_id"]),
                         "size": (pin["file"]["width"], pin["file"]["height"]),
                         "item_url": get_pin_url(pin),
                         "item_index_reset": index_start_flag,
