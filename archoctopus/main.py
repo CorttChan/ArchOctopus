@@ -1473,11 +1473,10 @@ class AoTaskPanel(wx_gui.TaskPanel):
 
     def on_folder(self, event):
         folder_dir = self.task_info.get("dir")
-        # if not (folder_dir and os.path.exists(folder_dir)):
         if not os.path.exists(folder_dir):
             folder_dir = self.task_info["url"]
         if wx.Platform == '__WXMAC__':
-            os.system(f"open '{folder_dir}'")
+            os.system(f"open \"{folder_dir}\"")
         else:
             wx.LaunchDefaultBrowser(folder_dir, flags=0)
 
@@ -1652,9 +1651,10 @@ class AoApp(wx_gui.MyApp):
         return True
 
     def OnExit(self):
-        usage_thread = Usage(self)
-        usage_thread.start()
-        usage_thread.join()
+        if getattr(sys, 'frozen', False):
+            usage_thread = Usage(self)
+            usage_thread.start()
+            usage_thread.join()
         self.con.on_close()
         return True
 

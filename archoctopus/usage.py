@@ -5,6 +5,10 @@
 # @Email   : cortt.me@gmail.com
 # @File    : usage_report.py
 
+"""
+匿名使用报告模块
+"""
+
 import uuid
 import getpass
 import threading
@@ -85,3 +89,22 @@ class Usage(threading.Thread):
             r.raise_for_status()
         except Exception as e:
             self.logger.error(str(e))
+
+
+if __name__ == '__main__':
+    from database import AoDatabase
+    from pprint import pprint
+
+    class TestApp(wx.App):
+        def OnInit(self):
+            # self.mainFrame = MyFrame(None, wx.ID_ANY, "")
+            # self.SetTopWindow(self.mainFrame)
+            # self.mainFrame.Show()
+
+            self.con = AoDatabase()
+
+            return True
+
+
+    tmp_usage = Usage(parent=TestApp())
+    pprint(tmp_usage._build_data())
