@@ -136,3 +136,6 @@ release/build-osx/dist/
 
 # osx
 .DS_Store
+
+# idea
+.idea/
