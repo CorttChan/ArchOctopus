@@ -1,0 +1,2 @@
+pyinstaller --log-level=DEBUG --distpath='./mac_dist' --workpath='./mac_build' --noconfirm ArchOctopus_for_Mac.spec
+ 61M	./Install

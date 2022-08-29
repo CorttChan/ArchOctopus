@@ -1,0 +1,10 @@
+wxpython>=4.1.1
+httpx>=0.22.0
+beautifulsoup4>=4.10.0
+lxml>=4.7.1
+pycryptodomex>=3.13.0
+lz4>=3.1.10
+pywin32>=303
+keyring>=23.5.0
+pyaes>=1.6.1
+# pbkdf2==1.3
