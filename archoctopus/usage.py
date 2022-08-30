@@ -18,11 +18,7 @@ import httpx
 import wx
 
 from version import VERSION
-from constants import APP_NAME
-
-
-USAGE_API_URL = "https://archoctopus.com/api/usage.php"
-# USAGE_API_URL = "https://archoctopus.com/wp-json/ao/v1/postUsage"
+from constants import APP_NAME, USAGE_API_URL
 
 
 def _platform():
@@ -46,9 +42,8 @@ class Usage(threading.Thread):
     def __init__(self, parent, *args, **kwargs):
         threading.Thread.__init__(self, *args, **kwargs)
 
-        self.parent = parent
         self.logger = logging.getLogger(APP_NAME)
-        self.con = wx.GetApp().con
+        self.con = parent.con
 
     def _num_history(self):
         sql = "SELECT COUNT(id) FROM history"
@@ -89,22 +84,3 @@ class Usage(threading.Thread):
             r.raise_for_status()
         except Exception as e:
             self.logger.error(str(e))
-
-
-if __name__ == '__main__':
-    from database import AoDatabase
-    from pprint import pprint
-
-    class TestApp(wx.App):
-        def OnInit(self):
-            # self.mainFrame = MyFrame(None, wx.ID_ANY, "")
-            # self.SetTopWindow(self.mainFrame)
-            # self.mainFrame.Show()
-
-            self.con = AoDatabase()
-
-            return True
-
-
-    tmp_usage = Usage(parent=TestApp())
-    pprint(tmp_usage._build_data())

@@ -17,3 +17,5 @@ GITEE_URL = "https://gitee.com/corttchan/ArchOctopus/"
 GITHUB_URL = "https://github.com/CorttChan/ArchOctopus/"
 
 LICENSE = "https://www.gnu.org/licenses/gpl-3.0.txt"
+
+USAGE_API_URL = "https://archoctopus.com/api/usage.php"

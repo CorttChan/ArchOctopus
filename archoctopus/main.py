@@ -546,7 +546,7 @@ class AoMainFrame(wx_gui.MyFrame):
                 if ask_result == wx.ID_YES:
                     target = result[6] or result[5]
                     if wx.Platform == '__WXMAC__':
-                        os.system(f"open '{target}'")
+                        os.system(f"open \"{target}\"")
                     else:
                         wx.LaunchDefaultBrowser(target, flags=0)
                 ask_dlg.Destroy()
@@ -1032,7 +1032,7 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
         if folder:
             if os.path.exists(folder):
                 if wx.Platform == '__WXMAC__':
-                    os.system(f"open '{folder}'")
+                    os.system(f"open \"{folder}\"")
                 else:
                     wx.LaunchDefaultBrowser(folder, flags=0)
             else:
@@ -1232,7 +1232,7 @@ class AoAccountPanel(wx_gui.AccountPanel):
         if not os.path.isdir(site_dir):
             os.makedirs(site_dir)
         if wx.Platform == '__WXMAC__':
-            os.system(f"open '{site_dir}'")
+            os.system(f"open \"{site_dir}\"")
         else:
             wx.LaunchDefaultBrowser(site_dir, flags=0)
 
@@ -1252,7 +1252,7 @@ class AoBoardPanel(wx_gui.BoardPanel):
         board_dir = os.path.join(sync_dir, site, self.board_name.GetLabel())
         if os.path.exists(board_dir):
             if wx.Platform == '__WXMAC__':
-                os.system(f"open '{board_dir}'")
+                os.system(f"open \"{board_dir}\"")
             else:
                 wx.LaunchDefaultBrowser(board_dir, flags=0)
 
