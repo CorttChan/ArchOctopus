@@ -15,7 +15,7 @@ import logging
 import os
 from queue import Queue
 
-from constants import APP_NAME
+from archoctopus.constants import APP_NAME
 
 # ----------------------------------------------------------------------
 INIT_TAGS_SQL = """

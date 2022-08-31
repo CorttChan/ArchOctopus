@@ -12,7 +12,7 @@ import re
 import json
 from bs4 import BeautifulSoup
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 SEARCH_API_URL = "https://www.behance.net/search/"

@@ -15,7 +15,7 @@ import typing
 from bs4 import BeautifulSoup
 from urllib.parse import urlunparse, unquote
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 # Pinterest

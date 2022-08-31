@@ -14,7 +14,7 @@ import os
 import json
 from bs4 import BeautifulSoup
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 class Parser(BaseParser):
@@ -78,7 +78,7 @@ class Parser(BaseParser):
 
 
 if __name__ == '__main__':
-    from plugins import UrlParser
+    from archoctopus.plugins import UrlParser
 
     myurl = "https://www.vogue.com/fashion-shows/fall-2022-ready-to-wear/simone-rocha/slideshow/collection#1"
     myurl_parser = UrlParser(myurl)

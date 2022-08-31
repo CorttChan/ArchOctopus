@@ -22,8 +22,9 @@ import wx
 import httpx
 from bs4 import BeautifulSoup
 
-from utils import retry, get_docs_dir
-# from pdf import PDF
+from archoctopus.utils import retry, get_docs_dir
+from archoctopus.constants import APP_NAME
+# from archoctopus.pdf import PDF
 
 
 HEADERS = {
@@ -155,7 +156,13 @@ class BaseParser(threading.Thread):
         self.task_id = task_id
         self.queue = parse_queue    # 解析队列
         self.parent = parent    # GUI对象
-        self.con = wx.GetApp().con  # 数据库连接
+
+        if self.parent is None:
+            from archoctopus.database import AoDatabase
+            self.con = AoDatabase()
+        else:
+            self.con = wx.GetApp().con  # 数据库连接
+
         self.pause_event = pause_event  # 用于暂停线程的标识
         self.running_event = running_event  # 用于停止线程的标识
         self.count = 0  # 统计解析文件总数
@@ -167,18 +174,25 @@ class BaseParser(threading.Thread):
         self.url_parser = UrlParser(self.url)   # url解析
 
         # ---- logger ----
-        self.logger = logging.getLogger(wx.GetApp().GetAppName())
+        self.logger = logging.getLogger(APP_NAME)
         
         # ---- request ----
         self.session = httpx.Client(headers=HEADERS, cookies=cookies, proxies=proxies, follow_redirects=True)
-        print(proxies)
 
         # ------ cfg ------
-        self.loop_max = wx.GetApp().cfg.ReadInt("/General/loop_max", defaultVal=20)         # 异步加载页面加载最大次数
-        self.is_page = wx.GetApp().cfg.ReadBool("/General/is_page", defaultVal=False)       # 自动加载下一页
-        self.root_dir = wx.GetApp().cfg.Read("/General/download_dir", defaultVal=get_docs_dir())        # 下载根目录
-        self.is_index = wx.GetApp().cfg.ReadBool("/Filter/is_index", defaultVal=True)       # 判断是否给图片添加序号的信号量
-        self.is_pdf = wx.GetApp().cfg.ReadBool("/General/pdf_output", defaultVal=False)     # 判断是否输出页面PDF
+        if self.parent is None:
+            self.loop_max = 3
+            self.is_page = False
+            self.root_dir = ""
+            self.is_index = True
+            self.is_pdf = False
+        else:
+            cfg = wx.GetApp().cfg
+            self.loop_max = cfg.ReadInt("/General/loop_max", defaultVal=3)  # 异步加载页面加载最大次数
+            self.is_page = cfg.ReadBool("/General/is_page", defaultVal=False)  # 自动加载下一页
+            self.root_dir = cfg.Read("/General/download_dir", defaultVal=get_docs_dir())  # 下载根目录
+            self.is_index = cfg.ReadBool("/Filter/is_index", defaultVal=True)  # 判断是否给图片添加序号的信号量
+            self.is_pdf = cfg.ReadBool("/General/pdf_output", defaultVal=False)  # 判断是否输出页面PDF
 
     def get_json_headers(self, **kwargs):
         headers = {
@@ -383,9 +397,10 @@ class BaseParser(threading.Thread):
 
             # 更新面板信息
             task_dir = os.path.join(self.root_dir, self.friend_name, self.task_name)
-            if parse_results is not None:
+            if self.parent is not None and parse_results is not None:
                 os.makedirs(task_dir, exist_ok=True)
-            wx.CallAfter(self.parent.call_task_name, task_dir)
+            if self.parent is not None:
+                wx.CallAfter(self.parent.call_task_name, task_dir)
 
             # 解析结果加入下载任务队列
             if parse_results is None:
@@ -396,12 +411,12 @@ class BaseParser(threading.Thread):
                 if item_data.get("is_abort"):
                     msg = item_data.get("abort_msg", "")
                     self.logger.debug("任务中止: %s", msg)
-                    wx.CallAfter(self.parent.call_abort, msg)
-                    #
+                    if self.parent is not None:
+                        wx.CallAfter(self.parent.call_abort, msg)
                     break
                 # 判断是否含子文件夹:
                 _sub_dir = item_data.get("sub_dir")
-                if _sub_dir:
+                if self.parent is not None and _sub_dir:
                     _item_dir = os.path.join(task_dir, _sub_dir)
                     os.makedirs(_item_dir, exist_ok=True)
                 else:
@@ -429,7 +444,8 @@ class BaseParser(threading.Thread):
             self.logger.error("解析错误: %s - %s", e, self.url, exc_info=True)
         finally:
             # 更新面板信息
-            wx.CallAfter(self.parent.call_imgs_sum, self.count)
+            if self.parent is not None:
+                wx.CallAfter(self.parent.call_imgs_sum, self.count)
             # 向任务队列中添加下载线程结束信号
             for _i in range(self.download_thread_count):
                 self.queue.put(None)

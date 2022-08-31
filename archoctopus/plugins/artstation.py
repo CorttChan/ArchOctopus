@@ -8,7 +8,7 @@ url: https://www.artstation.com/
 # date: 2022/2/9 21:17
 # desc:
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 class Parser(BaseParser):

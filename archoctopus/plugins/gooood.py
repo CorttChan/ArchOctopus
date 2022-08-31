@@ -9,7 +9,7 @@ url: https://www.gooood.cn/
 # desc:
 
 import re
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 API_URL = "https://dashboard.gooood.cn/api/wp/v2/{}"

@@ -15,13 +15,15 @@ import imghdr
 import wx
 from httpx import ProxyError, HTTPError, StreamError, InvalidURL, CookieConflict, TimeoutException
 
+from archoctopus.constants import APP_NAME
+
 
 def get_docs_dir():
     """
     Return the standard location on this platform for application data.
     """
     sp = wx.StandardPaths.Get()
-    return os.path.join(sp.GetDocumentsDir(), wx.GetApp().GetAppName())
+    return os.path.join(sp.GetDocumentsDir(), APP_NAME)
 
 
 def get_bitmap_from_embedded(data: bytes, scale: tuple = tuple(), isBase64: bool = True) -> wx.Bitmap:

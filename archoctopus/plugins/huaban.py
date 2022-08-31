@@ -10,7 +10,8 @@ url: https://www.huaban.com
 
 import re
 import json
-from plugins import BaseParser, UrlParser
+
+from archoctopus.plugins import BaseParser, UrlParser
 
 PIN_RECOMMEND = "https://huaban.com/pins/{_id}/recommendweb/"
 PIN_RECOMMEND_V2 = "https://api.huaban.com/pins/{_id}/recommendweb/"

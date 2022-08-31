@@ -10,8 +10,6 @@ import logging.config
 import string
 from queue import Queue
 
-# from distutils.version import LooseVersion
-
 import wx
 import wx.adv
 import wx.lib.newevent
@@ -36,22 +34,19 @@ from usage import Usage
 
 
 def is_url(url: str):
-    """
-    Validate available url format str.
-    """
+    """Validate available url format str"""
     result = urlparse(url)
     return all(result[:3])
 
 
 def get_data_dir():
-    """
-    Return the standard location on this platform for application data.
-    """
+    """Return the standard location on this platform for application data"""
     sp = wx.StandardPaths.Get()
     return sp.GetUserDataDir()
 
 
 def get_config():
+    """Returns the config file for ArchOctopus"""
     data_dir = get_data_dir()
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
@@ -60,6 +55,12 @@ def get_config():
         localFilename=os.path.join(data_dir, "config.ini")
     )
     return config
+
+
+def get_database_file():
+    """Returns the database file for ArchOctopus"""
+    database_file = os.path.join(get_data_dir(), "{}.db".format(constants.APP_NAME))
+    return database_file
 
 
 class DebugFrameHandler(logging.StreamHandler):
@@ -190,8 +191,6 @@ class AoMainFrame(wx_gui.MyFrame):
             self.build_menu_bar()
 
         # 账户同步信息预加载
-        self.logger.info("sync-preload start...")
-        self.logger.debug("sync-preload start...")
         sync_dir = self.cfg.Read("/Sync/sync_dir")
         self.sync = sync.AoSync(sync_dir)           # 同步对象
         self.sync_timer = wx.Timer(self)    # 同步定时器
@@ -1646,7 +1645,7 @@ class AoApp(wx_gui.MyApp):
             if answer == wx.OK:
                 self.cfg.WriteBool("/General/init", False)
 
-        self.con = AoDatabase(db=self.get_database_file())
+        self.con = AoDatabase(db=get_database_file())
         # self.con = AoDatabase()
 
         mainFrame = AoMainFrame(None, wx.ID_ANY, constants.APP_DISPLAY_NAME)
@@ -1670,13 +1669,6 @@ class AoApp(wx_gui.MyApp):
     def get_resource_dir(self):
         """Returns the resource directory for ArchOctopus"""
         return self.resource_dir
-
-    def get_database_file(self):
-        """
-        Returns the database file for ArchOctopus.
-        """
-        database_file = os.path.join(get_data_dir(), "{}.db".format(constants.APP_NAME))
-        return database_file
 
 
 def main():

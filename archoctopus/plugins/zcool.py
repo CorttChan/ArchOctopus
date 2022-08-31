@@ -4,15 +4,15 @@ url: https://www.zcool.com.cn/
 """
 
 # name: zcool.py
-# version: 0.0.1
-# date: 2022/2/9 21:17
+# version: 0.0.2
+# date: 2022/08/31 21:50
 # desc:
 
 import re
 import json
 from bs4 import BeautifulSoup
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 API_URL = "https://www.zcool.com.cn/work/content/show"

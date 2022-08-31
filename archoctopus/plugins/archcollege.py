@@ -11,7 +11,7 @@ url: http://www.archcollege.com/
 import re
 from bs4 import BeautifulSoup
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 CATEGORY_API_URL = "http://www.archcollege.com/cat/{}/"

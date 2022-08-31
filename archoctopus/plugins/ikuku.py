@@ -11,7 +11,7 @@ url: http://www.ikuku.cn/
 
 import re
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 AJAX_API = "http://www.ikuku.cn/wp-admin/admin-ajax.php"

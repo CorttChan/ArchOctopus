@@ -13,7 +13,7 @@ import re
 import os
 from bs4 import BeautifulSoup
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 class Parser(BaseParser):
@@ -105,7 +105,7 @@ class Parser(BaseParser):
 
 
 if __name__ == '__main__':
-    from plugins import UrlParser
+    from archoctopus.plugins import UrlParser
 
     myurl = "http://shows.vogue.com.cn/2022-ss-RTW/Altuzarra/runway/page-2.html"
     myurl_parser = UrlParser(myurl)

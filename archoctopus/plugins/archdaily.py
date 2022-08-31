@@ -12,7 +12,7 @@ import os.path
 import re
 from bs4 import BeautifulSoup
 
-from plugins import BaseParser
+from archoctopus.plugins import BaseParser
 
 
 class Parser(BaseParser):
