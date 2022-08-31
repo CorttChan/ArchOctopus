@@ -139,3 +139,6 @@ release/build-osx/dist/
 
 # idea
 .idea/
+
+# tmp
+tmp/
