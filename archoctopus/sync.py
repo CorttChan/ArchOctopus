@@ -33,6 +33,7 @@ import utils
 import cookies
 
 from database import AoDatabase
+from constants import APP_NAME
 
 
 HEADERS = {
@@ -50,7 +51,7 @@ class SyncDownload(threading.Thread):
                  sync_dir: str):
         super(SyncDownload, self).__init__()
 
-        self.logger = logging.getLogger("sync")
+        self.logger = logging.getLogger(APP_NAME)
         self.con = con
         self.running_event = running_event
         self.sync_dir = sync_dir
@@ -174,7 +175,7 @@ class Account:
     同步账户基类
     """
     def __init__(self, browser_cookies: CookieJar, con: AoDatabase):
-        self.logger = logging.getLogger("sync")
+        self.logger = logging.getLogger(APP_NAME)
         self.con = con or wx.GetApp().con
         self.session = Client(headers=HEADERS, cookies=browser_cookies)
 
@@ -912,7 +913,7 @@ class Huaban(Account):
 class AoSync:
 
     def __init__(self, sync_dir):
-        self.logger = logging.getLogger("sync")
+        self.logger = logging.getLogger(APP_NAME)
 
         self.sync_parser_thread = None          # 同步解析线程
         self.sync_download_thread = None        # 同步下载线程

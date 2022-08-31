@@ -9,6 +9,7 @@ url: https://www.zcool.com.cn/
 # desc:
 
 import re
+import json
 from bs4 import BeautifulSoup
 
 from plugins import BaseParser
@@ -30,7 +31,8 @@ class Parser(BaseParser):
 
     def get_title(self, html):
         title = super(Parser, self).get_title(html)
-        title = re.sub(" - 原创作品 - 站酷 \\(ZCOOL\\)$| - 打开站酷，发现更好的设计！$", "", title)
+        self.logger.debug("title: %s", title)
+        title = re.sub(" - 原创作品 - 站酷 \\(ZCOOL\\)$| - 打开站酷，发现更好的设计！$|_原创作品-站酷ZCOOL", "", title)
         return title
 
     def api_parse(self, parse_id, title):
@@ -67,9 +69,23 @@ class Parser(BaseParser):
     def parse_article(self, response, title=""):
         html = response.text
         html_bs = BeautifulSoup(html, 'lxml')
-        article_id = html_bs.find("input", id="dataInput").get("data-objid")
+        pws_data = html_bs.find("script", id="__NEXT_DATA__")
+        pws_data_json = json.loads(pws_data.get_text())
 
-        yield from self.api_parse(parse_id=article_id, title=title)
+        pat = re.compile("([^?]*)")
+
+        index_start_flag = True  # 图片序号重置信号
+        for image in pws_data_json["props"]["pageProps"]["data"]["productImages"]:
+            item_data = {
+                "sub_dir": title,
+                "item_url": pat.match(image["url"]).group(1),
+                "item_index_reset": index_start_flag,
+                "size": (image["width"], image["height"])
+            }
+            self.logger.debug(item_data["item_url"])
+            yield item_data
+            if index_start_flag:
+                index_start_flag = False
 
     def parse_discover(self, response):
         pass

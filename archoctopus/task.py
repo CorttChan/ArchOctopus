@@ -131,7 +131,6 @@ class TaskItem:
         self.running_event.set()  # 将running设置为True
         # 网络代理
         self.proxies = self.parent.GetTopLevelParent().proxies
-        print("proxies:", self.proxies)
         # 浏览器cookies
         try:
             self.cookies = cookies.load()

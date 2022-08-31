@@ -21,6 +21,8 @@ from utils import \
     get_file_size, \
     is_downloaded
 
+from constants import APP_NAME
+
 
 class Downloader(threading.Thread):
     """
@@ -42,7 +44,7 @@ class Downloader(threading.Thread):
         self.running_event = running_event  # 用于停止线程的标识
 
         # ---- logger ----
-        self.logger = logging.getLogger(wx.GetApp().GetAppName())
+        self.logger = logging.getLogger(APP_NAME)
 
         # ---- request ----
         headers = {

@@ -10,7 +10,7 @@ import logging
 import wx
 
 from constants import APP_NAME
-# from utils import retry
+from version import VERSION
 
 # local test
 TEST_UPDATE_URL = "http://192.168.11.12/release"
@@ -44,7 +44,7 @@ class Update(threading.Thread):
             req.raise_for_status()
 
             info = req.json()
-            if LooseVersion(info["version"]) > LooseVersion(wx.GetApp().version):
+            if LooseVersion(info["version"]) > LooseVersion(VERSION):
                 update_info = {
                     "version": info.get("version"),
                     "desc": info.get("desc"),

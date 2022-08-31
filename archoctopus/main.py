@@ -10,10 +10,7 @@ import logging.config
 import string
 from queue import Queue
 
-try:
-    from packaging.version import Version
-except ImportError:
-    from distutils.version import LooseVersion as Version
+# from distutils.version import LooseVersion
 
 import wx
 import wx.adv
@@ -79,9 +76,12 @@ class DebugFrameHandler(logging.StreamHandler):
     # ----------------------------------------------------------------------
     def emit(self, record):
         """Constructor"""
-        msg = self.format(record)
-        self.textctrl.WriteText(msg + "\n")
-        self.flush()
+        try:
+            msg = self.format(record)
+            self.textctrl.WriteText(msg + "\n")
+            self.flush()
+        except Exception:
+            self.handleError(record)
 
 
 class SettingValidator(wx.Validator):
@@ -170,18 +170,6 @@ class AoMainFrame(wx_gui.MyFrame):
         self.cfg = wx.GetApp().cfg          # 全局配置对象
         self.con = wx.GetApp().con          # 数据库连接对象
 
-        sync_dir = self.cfg.Read("/Sync/sync_dir")
-        self.sync = sync.AoSync(sync_dir)           # 同步对象
-        self.sync_timer = wx.Timer(self)    # 同步定时器
-        self.sync_cover_cache = {}
-        if self.cfg.ReadBool("/Sync/sync_status", defaultVal=False):
-            self.sync_status_ctrl.SetBitmap(svg_bitmap(SYNC, 24, 24, colour=wx.WHITE))
-            interval = self.cfg.ReadInt("/Sync/sync_interval", defaultVal=600000)
-            self.sync.start()
-            self.sync_timer.Start(interval)
-        else:
-            wx.CallLater(5000, self.sync.start_preload)     # 延时执行账户信息检测, 避免启动等待时间过长
-
         self.is_auto_clip = False   # 自动粘贴板
         self.previous_url = ""  # 用于判断系统粘贴板中的url是否已使用过
         self.running_task_count = 0  # 用于判断是否存在正在运行的Task实例
@@ -200,6 +188,21 @@ class AoMainFrame(wx_gui.MyFrame):
         # MACOS 菜单
         if wx.Platform == '__WXMAC__':
             self.build_menu_bar()
+
+        # 账户同步信息预加载
+        self.logger.info("sync-preload start...")
+        self.logger.debug("sync-preload start...")
+        sync_dir = self.cfg.Read("/Sync/sync_dir")
+        self.sync = sync.AoSync(sync_dir)           # 同步对象
+        self.sync_timer = wx.Timer(self)    # 同步定时器
+        self.sync_cover_cache = {}
+        if self.cfg.ReadBool("/Sync/sync_status", defaultVal=False):
+            self.sync_status_ctrl.SetBitmap(svg_bitmap(SYNC, 24, 24, colour=wx.WHITE))
+            interval = self.cfg.ReadInt("/Sync/sync_interval", defaultVal=600000)
+            self.sync.start()
+            self.sync_timer.Start(interval)
+        else:
+            wx.CallLater(5000, self.sync.start_preload)     # 延时执行账户信息检测, 避免启动等待时间过长
 
         # 更新插件
         check_plugin_thread = PluginUpdate(self)
@@ -357,7 +360,7 @@ class AoMainFrame(wx_gui.MyFrame):
                 self.debug_dlg.Show()
                 # 添加DebugFrameHandler
                 self.frame_handler = DebugFrameHandler(self.debug_dlg.log_tc)
-                self.frame_handler.setLevel("DEBUG")
+                # self.frame_handler.setLevel("DEBUG")
                 self.logger.addHandler(self.frame_handler)
         else:
             if hasattr(self, "debug_dlg"):
@@ -1553,7 +1556,8 @@ class TBicon(wx.adv.TaskBarIcon):
 
         _icon = wx.NullIcon
         _icon.CopyFromBitmap(MyBitmap(wx_gui.APP_TB_ICON))
-        self.SetIcon(_icon, f'{constants.APP_DISPLAY_NAME}\n发行版本: {Version(version.VERSION)}')
+        # self.SetIcon(_icon, f'{constants.APP_DISPLAY_NAME}\n发行版本: {LooseVersion(version.VERSION)}')
+        self.SetIcon(_icon, f'{constants.APP_DISPLAY_NAME}\n发行版本: {version.VERSION}')
 
         self.Bind(wx.EVT_MENU, self.on_taskbar_setup, id=self.TBMENU_SETUP)
         self.Bind(wx.EVT_MENU, self.on_open_url, id=self.TBMENU_HELP)
@@ -1626,9 +1630,10 @@ class AoApp(wx_gui.MyApp):
 
         self.SetAppName(constants.APP_NAME)
         self.SetAppDisplayName(constants.APP_DISPLAY_NAME)
-        self.version = version.VERSION
+        # self.version = version.VERSION
 
-        self.installDir = os.path.abspath(os.path.dirname(__file__))
+        self.install_dir = os.path.abspath(os.path.dirname(__file__))
+        self.resource_dir = os.path.join(self.install_dir, "gui", "resource")
 
         self.cfg = get_config()
 
@@ -1659,17 +1664,12 @@ class AoApp(wx_gui.MyApp):
         return True
 
     def get_install_dir(self):
-        """
-        Returns the installation directory for ArchOctopus.
-        """
-        return self.installDir
+        """Returns the installation directory for ArchOctopus"""
+        return self.install_dir
 
     def get_resource_dir(self):
-        """
-        Returns the bitmaps directory for ArchOctopus.
-        """
-        bitmaps_dir = os.path.join(self.installDir, "gui", "resource")
-        return bitmaps_dir
+        """Returns the resource directory for ArchOctopus"""
+        return self.resource_dir
 
     def get_database_file(self):
         """
@@ -1685,7 +1685,7 @@ def main():
     :return:
     """
     if getattr(sys, 'frozen', False):
-        level = "ERROR"
+        level = "INFO"
     else:
         level = "DEBUG"
 
@@ -1695,13 +1695,11 @@ def main():
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
-            # "simple": {'format': '%(asctime)s [%(name)s:%(lineno)d] [%(levelname)s]-> %(message)s'},
             "simple": {'format': '%(asctime)s - %(levelname)s - %(filename)s[:%(lineno)d] - %(message)s'},
         },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                # "level": "INFO",
                 "formatter": "simple",
                 "stream": "ext://sys.stdout"
             },

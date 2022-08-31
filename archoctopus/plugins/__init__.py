@@ -365,7 +365,7 @@ class BaseParser(threading.Thread):
             elif re.match("text/", content_type):
                 # 解析标题
                 html = response.text
-                # with open("response.html", 'w', encoding="utf-8") as f:
+                # with open("../debug/response.html", 'w', encoding="utf-8") as f:
                 #     f.write(html)
                 self.task_name = self.get_title(html)   # 默认解析获取的标题, 后续可以根据具体分类重新赋值(可选)
 
