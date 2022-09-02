@@ -9,11 +9,12 @@ import logging
 
 import wx
 
-from constants import APP_NAME
-from version import VERSION
+from archoctopus.constants import APP_NAME
+from archoctopus.version import VERSION
 
 # local test
-TEST_UPDATE_URL = "http://192.168.11.12/release"
+TEST_UPDATE_URL = "http://127.0.0.1:8000/test_release_version"
+TEST_PLUGIN_VERSION_URL = "http://127.0.0.1:8000/test_plugin_version"
 
 # github.com
 GITHUB_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/release_version"
@@ -31,15 +32,16 @@ class Update(threading.Thread):
     程序更新提醒
     """
 
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, test=False, *args, **kwargs):
         threading.Thread.__init__(self, *args, **kwargs)
         self.parent = parent
+        self.test = test
 
         self.logger = logging.getLogger(APP_NAME)
 
-    # @retry(times=3)
     def run(self):
-        for url in (GITEE_UPDATE_URL, GITHUB_UPDATE_URL):
+        urls = (TEST_UPDATE_URL,) if self.test else (GITEE_UPDATE_URL, GITHUB_UPDATE_URL)
+        for url in urls:
             req = httpx.get(url)
             req.raise_for_status()
 
@@ -71,9 +73,10 @@ class PluginUpdate(threading.Thread):
     启动时自动检查插件配置文件, 从服务器端(gitee/github)下载与更新解析py文件.
     """
 
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, test=False, *args, **kwargs):
         threading.Thread.__init__(self, *args, **kwargs)
         self.parent = parent
+        self.test = test
 
         self.logger = logging.getLogger(APP_NAME)
 
@@ -101,7 +104,8 @@ class PluginUpdate(threading.Thread):
 
         plugins_update_result = {}
 
-        for url in (GITEE_PLUGIN_VERSION_URL, GITHUB_PLUGIN_VERSION_URL):
+        urls = (TEST_PLUGIN_VERSION_URL,) if self.test else (GITEE_PLUGIN_VERSION_URL, GITHUB_PLUGIN_VERSION_URL)
+        for url in urls:
             req = httpx.get(url)
             req.raise_for_status()
 

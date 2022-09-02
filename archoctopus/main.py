@@ -171,7 +171,7 @@ class AoMainFrame(wx_gui.MyFrame):
         self.cfg = wx.GetApp().cfg          # 全局配置对象
         self.con = wx.GetApp().con          # 数据库连接对象
 
-        self.is_auto_clip = False   # 自动粘贴板
+        self.is_auto_clip = True   # 自动粘贴板
         self.previous_url = ""  # 用于判断系统粘贴板中的url是否已使用过
         self.running_task_count = 0  # 用于判断是否存在正在运行的Task实例
         self.proxies = None
@@ -288,9 +288,6 @@ class AoMainFrame(wx_gui.MyFrame):
         return task_panel
 
     def call_update_notice(self, **kwargs):
-        # self.available_update_url = kwargs.get("url")
-        # self.available_update_version = kwargs.get("version")
-
         _icon = wx.NullIcon
         _icon.CopyFromBitmap(MyBitmap(wx_gui.APP_ABOUT_ICON))
 
@@ -311,8 +308,6 @@ class AoMainFrame(wx_gui.MyFrame):
             notify.UseTaskBarIcon(self.tbicon)
 
         # notify.AddAction(link_btn_id, "现在更新")
-
-        # notify.Show(timeout=notify.Timeout_Never)
         notify.Show(timeout=notify.Timeout_Auto)
 
     def call_upgrade_notice(self, **kwargs):
@@ -346,7 +341,7 @@ class AoMainFrame(wx_gui.MyFrame):
 
     def config_effect(self):
         # 检查自动粘贴板设置
-        self.is_auto_clip = self.cfg.ReadBool("/General/auto_clip", defaultVal=False)
+        self.is_auto_clip = self.cfg.ReadBool("/General/auto_clip", defaultVal=True)
         # 判断是否开启日志面板
         if self.cfg.ReadBool("/Privacy/debug", defaultVal=False):
             if not hasattr(self, "debug_dlg"):
