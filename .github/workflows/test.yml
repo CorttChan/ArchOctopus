@@ -5,7 +5,7 @@ name: daily-test
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '0 * * * *'
 
 permissions:
   contents: read
@@ -30,4 +30,4 @@ jobs:
         if [ -f requirements-dev-osx.txt ]; then pip install -r requirements-dev-osx.txt; fi
     - name: Test
       run: |
-        python ./tests/test_plugins.py
+        python3 ./tests/test_plugins.py
