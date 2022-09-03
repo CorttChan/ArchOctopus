@@ -5,15 +5,12 @@ name: daily-test
 
 on:
   schedule:
-    - cron: '0 * * * *'
-
-permissions:
-  contents: read
+    - cron: '*/15 * * * *'
 
 jobs:
   test:
 
-    runs-on: ubuntu-latest
+    runs-on: macos-10.15
 
     steps:
     - uses: actions/checkout@v3
@@ -30,4 +27,5 @@ jobs:
         if [ -f requirements-dev-osx.txt ]; then pip install -r requirements-dev-osx.txt; fi
     - name: Test
       run: |
-        python3 ./tests/test_plugins.py
+        cd ./tests
+        python ./test_plugins.py
