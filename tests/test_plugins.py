@@ -2,7 +2,10 @@ import unittest
 from queue import Queue
 
 import sys
-sys.path.extend(["../"])
+import os
+
+os.chdir(os.path.dirname(__file__))
+sys.path.extend(["../", ])
 
 from archoctopus.plugins import huaban, archdaily, zcool
 
@@ -140,7 +143,7 @@ class ParseTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
 
     # suite = unittest.TestSuite()
     # suite.addTest(ParseTestCase("test_huaban_pin"))
@@ -148,6 +151,7 @@ if __name__ == '__main__':
     # runner = unittest.TextTestRunner()
     # runner.run(suite)
 
-    # with open('TestResult.txt', 'w') as f:
-    #     runner = unittest.TextTestRunner(stream=f, verbosity=2)
-    #     unittest.main(testRunner=runner)
+    # with open(os.path.join(os.path.dirname(__file__), 'TestResult.txt'), 'w') as f:
+    with open('./TestResult.txt', 'w') as f:
+        runner = unittest.TextTestRunner(stream=f, verbosity=2)
+        unittest.main(testRunner=runner)
