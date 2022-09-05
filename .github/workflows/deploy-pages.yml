@@ -1,0 +1,27 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Deploy Pages
+
+on:
+  push:
+    branches:
+      - 'gh-pages'
+
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get latest code
+      uses: actions/checkout@v3
+      with:
+        ref: gh-pages
+
+    - name: Upload pages
+      uses: SamKirkland/FTP-Deploy-Action@4.3.2
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
