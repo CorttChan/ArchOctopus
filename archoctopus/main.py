@@ -14,23 +14,21 @@ import wx
 import wx.adv
 import wx.lib.newevent
 
-import utils
-import version
-import constants
+from archoctopus import version
+from archoctopus import constants
 
 if wx.Platform == '__WXMSW__':
-    from gui import msw_gui as wx_gui
+    from archoctopus.gui import msw_gui as wx_gui
 else:
-    from gui import mac_gui as wx_gui
+    from archoctopus.gui import mac_gui as wx_gui
 
-from gui import custom_outlinebtn, MyBitmap, svg_bitmap
-from gui import SYNC, SYNC_DISABLE, PAUSE, RESTART
-from task import TaskItem
-from database import AoDatabase
-from update import Update, PluginUpdate
-import sync
-from utils import get_bitmap_from_embedded, get_docs_dir
-from usage import Usage
+from archoctopus.gui import custom_outlinebtn, MyBitmap, svg_bitmap, SYNC, SYNC_DISABLE, PAUSE, RESTART
+from archoctopus.task import TaskItem
+from archoctopus.database import AoDatabase
+from archoctopus.update import Update, PluginUpdate
+from archoctopus.sync import AoSync
+from archoctopus.utils import get_bitmap_from_embedded, get_docs_dir, UpdateCover
+from archoctopus.usage import Usage
 
 
 def is_url(url: str):
@@ -192,7 +190,7 @@ class AoMainFrame(wx_gui.MyFrame):
 
         # 账户同步信息预加载
         sync_dir = self.cfg.Read("/Sync/sync_dir")
-        self.sync = sync.AoSync(sync_dir)           # 同步对象
+        self.sync = AoSync(sync_dir)           # 同步对象
         self.sync_timer = wx.Timer(self)    # 同步定时器
         self.sync_cover_cache = {}
         if self.cfg.ReadBool("/Sync/sync_status", defaultVal=False):
@@ -1117,7 +1115,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
 
         # 初始化同步面板
         # board封面更新线程启动
-        update_cover_thread = utils.UpdateCover(self, self.cover_queue, self.con)
+        update_cover_thread = UpdateCover(self, self.cover_queue, self.con)
         update_cover_thread.setDaemon(True)
         update_cover_thread.start()
 

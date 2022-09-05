@@ -29,11 +29,11 @@ from bs4 import BeautifulSoup
 from httpx import Client
 from httpx import ProxyError, HTTPError, StreamError, InvalidURL, CookieConflict
 
-import utils
-import cookies
+from archoctopus import utils
+from archoctopus import cookies
 
-from database import AoDatabase
-from constants import APP_NAME
+from archoctopus.database import AoDatabase
+from archoctopus.constants import APP_NAME
 
 
 HEADERS = {

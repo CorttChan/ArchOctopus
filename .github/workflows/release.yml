@@ -1,0 +1,87 @@
+# Workflow's name
+name: Build ArchOctopus For Win/Mac
+
+# Workflow's trigger
+on:
+  push:
+    tags:
+      - "v*"
+
+# Workflow's jobs
+jobs:
+  # job's id
+  release:
+    # job's name
+    name: build and release electron app
+
+    # the type of machine to run the job on
+    runs-on: ${{ matrix.os }}
+
+    # create a build matrix for jobs
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019, macos-latest]
+
+    # create steps
+    steps:
+      # step1: check out repository
+      - name: Check out git repository
+        uses: actions/checkout@v3
+
+      # step2: set up python
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.8"
+          cache: 'pip'
+
+      # step3: install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade wheel
+          python -m pip install --upgrade pyinstaller
+
+      # step4: build app for mac/win
+      - name: build mac app
+        if: matrix.os == 'macos-latest'
+        run: |
+          pip install -r requirements-dev-osx.txt
+          cd ./release/build-osx
+          source ./build.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build windows app
+        if: matrix.os == 'windows-2019'
+        run: |
+          pip install -r requirements-dev-msw.txt
+          cd .\release\build-msw
+          .\build.bat
+        env:
+          GH_TOKEN: bef0b46667d2b13f8asdasdasd762873af59f71c
+
+      # step5: create release
+      - name: release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: "dist_electron/**"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # step6: Create dir
+      - name: Create release dir
+        run: |
+          mkdir v
+
+      # step7: ftp upload
+      - name: Upload test result
+        uses: SamKirkland/FTP-Deploy-Action@4.3.2
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./tests/
+          server-dir: ./app/release/

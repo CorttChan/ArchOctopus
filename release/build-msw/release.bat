@@ -6,5 +6,5 @@ pyinstaller ^
     --upx-dir=".\upx-3.95-win64" ^
     --noconfirm ^
     build.spec
-echo ArchOctopus打包完成.
+echo 'ArchOctopus build completed...'.
 pause

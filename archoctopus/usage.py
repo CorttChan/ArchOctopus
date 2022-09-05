@@ -17,8 +17,8 @@ import logging
 import httpx
 import wx
 
-from version import VERSION
-from constants import APP_NAME, USAGE_API_URL
+from archoctopus.version import VERSION
+from archoctopus.constants import APP_NAME, USAGE_API_URL
 
 
 def _platform():

@@ -1,10 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# import PyInstaller.config
-# PyInstaller.config.CONF['distpath'] = "E:\\release_dist"
-# PyInstaller.config.CONF['workpath'] = "E:\\release_build"
-
-
 block_cipher = None
 
 
@@ -54,8 +49,6 @@ coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
-               # Tree(".\\log", prefix=".\\log", excludes=['*.*']),
-               # Tree(".\\data", prefix=".\\data", excludes=['*.*']),
                strip=False,
                upx=True,
                upx_exclude=[],

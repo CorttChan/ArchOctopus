@@ -12,7 +12,7 @@ from http.cookiejar import CookieJar
 import wx
 from httpx import Client
 
-from utils import \
+from archoctopus.utils import \
     retry, \
     get_name_from_url, \
     get_img_format, \
@@ -21,7 +21,7 @@ from utils import \
     get_file_size, \
     is_downloaded
 
-from constants import APP_NAME
+from archoctopus.constants import APP_NAME
 
 
 class Downloader(threading.Thread):

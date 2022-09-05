@@ -13,12 +13,10 @@ import weakref
 from urllib.parse import urlparse, unquote
 import logging
 
-# import wx
-
-import cookies
-from constants import APP_NAME
-from download import Downloader
-from plugins import GeneralParser
+from archoctopus import cookies
+from archoctopus.constants import APP_NAME
+from archoctopus.download import Downloader
+from archoctopus.plugins import GeneralParser
 
 
 # Constant

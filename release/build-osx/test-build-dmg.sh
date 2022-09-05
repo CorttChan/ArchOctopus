@@ -39,9 +39,9 @@ sleep 2
 
 # 增加Applications目录的软链接
 echo "Add link to /Applications"
-pushd /Volumes/"${VOL_NAME}"
-ln -s /Applications
-popd
+pushd /Volumes/"${VOL_NAME}" || exit
+ln -s /Applications ./Applications
+popd || exit
 
 # 拷贝背景图片
 mkdir /Volumes/"${VOL_NAME}"/.background
