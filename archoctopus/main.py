@@ -709,7 +709,7 @@ class AoSettingDlg(wx_gui.SettingDialog):
         self.download_dir_display.SetValidator(SettingValidator(self.cfg, "/General/download_dir", value_type="str",
                                                                 default=get_docs_dir()))
         self.loop_max_ctrl.SetValidator(SettingValidator(self.cfg, "/General/loop_max", value_type="str",
-                                                         flag="digit", default="5"))
+                                                         flag="digit", default="3"))
         self.clip_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/auto_clip", value_type="bool",
                                                             default=True))
         self.pdf_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/pdf_output", value_type="bool"))
@@ -1673,6 +1673,8 @@ def main():
         level = "INFO"
     else:
         level = "DEBUG"
+
+    # level = "DEBUG"
 
     # 日志配置
     log_file = os.path.join(os.path.dirname(__file__), constants.APP_NAME+".log")

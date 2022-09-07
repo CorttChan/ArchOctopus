@@ -19,6 +19,10 @@ import base64
 from typing import Union
 import json
 import sqlite3
+import logging
+
+from archoctopus.constants import APP_NAME
+
 
 from Cryptodome.Cipher import AES
 import lz4.block
@@ -30,6 +34,8 @@ if sys.platform == 'darwin':
     from pbkdf2 import PBKDF2
 
 __doc__ = 'Load browser cookies into a cookiejar'
+
+logger = logging.getLogger(APP_NAME)
 
 
 class BrowserCookieError(Exception):
@@ -196,6 +202,7 @@ class ChromiumBased:
         if not cookie_file:
             raise BrowserCookieError('Failed to find {} cookie'.format(self.browser))
 
+        logger.debug("cookie_file: %s", cookie_file)
         self.tmp_cookie_file = create_local_copy(cookie_file)
 
     def __del__(self):

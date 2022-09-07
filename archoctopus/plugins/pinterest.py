@@ -87,7 +87,6 @@ class Parser(BaseParser):
         super().__init__(*args, **kwargs)
 
         self.friend_name = "Pinterest"
-        self.logger.info("%s: %s", __file__.split("/")[-1], self.__class__.__name__)
 
     def parse_home(self, response):
         """

@@ -81,7 +81,7 @@
 ;--------------------------------
 ;Installer Sections
 
-Section "Installer Section" SecCore
+Section "Installer Section"
 
   SetOverwrite on
   ;ADD INSTALL FILES HERE !DONT REMOVE THIS LINE
@@ -130,7 +130,7 @@ FunctionEnd
 ;--------------------------------
 ;Uninstaller Section
 
-Section "Uninstaller Section"
+Section "un.Uninstaller Section"
 
   Delete "$INSTDIR\Uninstall.exe"
 

@@ -422,6 +422,7 @@ class Archdaily(Account):
 
     def get_user_info(self, raw_user_info: dict) -> dict:
         """
+        获取基本信息
         :param raw_user_info:
         :return:
         """
@@ -722,33 +723,6 @@ class Huaban(Account):
         page_json = json.loads(result)
         return page_json
 
-    # def login(self) -> dict:
-    #     result = {
-    #         "is_connected": False,
-    #     }
-    #
-    #     response = self.session.request("GET", self.home_url, follow_redirects=True)
-    #     html = response.text
-    #     req_json = self.get_page_json(html, "req")
-    #
-    #     if not req_json or not req_json.get("user"):
-    #         raise AccountError(f"登录失败: {self.home_url}")
-    #
-    #     account_url = "https://huaban.com/{}/".format(req_json["user"].get("urlname"),)
-    #     headers = {
-    #         'Referer': "https://huaban.com/home/",
-    #         'X-Requested-With': 'XMLHttpRequest',
-    #     }
-    #     response = self.session.request("GET", account_url, headers=headers)
-    #     response_json = response.json()
-    #
-    #     if not response_json and not response_json.get("user"):
-    #         raise AccountError(f"登录失败: {account_url}")
-    #
-    #     result["raw_user_info"] = response_json
-    #     result["is_connected"] = True
-    #     return result
-
     def login(self) -> dict:
         result = {
             "is_connected": False,
@@ -760,29 +734,19 @@ class Huaban(Account):
             'X-Requested-With': 'XMLHttpRequest',
         }
         req = self.session.request("GET", url, headers=headers)
+
+        self.logger.debug(req.url)
+        self.logger.debug(str(req.cookies))
+
         resp = req.json()
 
         if not resp or resp.get("err") == 404:
+            self.logger.error(str(resp))
             raise AccountError(f"登录失败: {self.home_url}")
 
         result["raw_user_info"] = resp
         result["is_connected"] = True
         return result
-
-    # def get_user_info(self, raw_user_info) -> dict:
-    #     self.logger.debug("raw_user_info: %s", raw_user_info.get("user"))
-    #     user_info = {
-    #         "user_id": raw_user_info["user"].get("user_id"),
-    #         "site": self.site,
-    #         "name": raw_user_info["user"].get("username"),
-    #         "slug": raw_user_info["user"].get("urlname"),
-    #         "email": raw_user_info["user"].get("email"),
-    #         "url": self.account_url.format(_slug=raw_user_info["user"].get("urlname"),),
-    #         "avatar_url": 'https://hbimg.huabanimg.com/{}'.format(raw_user_info["user"]["avatar"]["key"]),
-    #         "registry_t": utils.time_to_date(raw_user_info["user"].get("created_at")),
-    #         "update_t": None,
-    #     }
-    #     return user_info
 
     def get_user_info(self, raw_user_info) -> dict:
         self.logger.debug("raw_user_info: %s", raw_user_info.get("user"))
@@ -798,27 +762,6 @@ class Huaban(Account):
             "update_t": None,
         }
         return user_info
-
-    # def get_boards(self) -> Generator:
-    #     account_url = self.account_url.format(_slug=self.user_info["slug"])
-    #     _max = None
-    #     headers = {
-    #         'Referer': account_url,
-    #         'X-Requested-With': 'XMLHttpRequest',
-    #     }
-    #     while True:
-    #         params = {"max": _max, "limit": 10, "wfl": 1}
-    #         response = self.session.request("GET", account_url, headers=headers, params=params)
-    #         self.logger.debug("%s <board_url>: %s", self.site, response.url)
-    #         page_json = response.json()['user']
-    #         # 循环退出条件
-    #         if page_json["boards"]:
-    #             for board in page_json["boards"]:
-    #                 yield board
-    #         else:
-    #             break
-    #         last_item = page_json["boards"][-1]
-    #         _max = last_item["board_id"]
 
     def get_boards(self) -> Generator:
         urlname = self.user_info["slug"]
@@ -857,30 +800,6 @@ class Huaban(Account):
             "updated_t": utils.time_to_date(board["updated_at"])
         }
         return board_data
-
-    # def get_items(self, board) -> Generator:
-    #     board_url = self.board_url.format(_id=board.get("board_id"))
-    #     headers = {
-    #         'Referer': board_url,
-    #         'X-Requested-With': 'XMLHttpRequest',
-    #     }
-    #     _max = None
-    #     while True:
-    #         params = {"max": _max, "limit": 10, "wfl": 1}
-    #         response = self.session.request("GET", board_url, headers=headers, params=params)
-    #         page_json = response.json()["board"]['pins']
-    #         if page_json:
-    #             for pin in page_json:
-    #                 item_data = {
-    #                     "board_id": pin["board_id"],
-    #                     "url": self.get_pin_url(pin),
-    #                     "width": pin["file"]["width"],
-    #                     "height": pin["file"]["height"],
-    #                 }
-    #                 yield item_data
-    #         else:
-    #             break
-    #         _max = page_json[-1]["pin_id"]
 
     def get_items(self, board) -> Generator:
         url = self.api_url + "/boards/{}/pins".format(board["board_id"])

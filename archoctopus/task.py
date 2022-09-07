@@ -13,6 +13,8 @@ import weakref
 from urllib.parse import urlparse, unquote
 import logging
 
+import wx
+
 from archoctopus import cookies
 from archoctopus.constants import APP_NAME
 from archoctopus.download import Downloader
@@ -93,8 +95,7 @@ class Plugin:
         #     rule = cfg.Read(cfg_path)
         #     return get_custom_class(plugin_name, rule)     # 返回自定义规则解析类
 
-        bundle_dir = os.path.abspath(os.path.dirname(__file__))
-        # bundle_dir = wx.GetApp().get_install_dir()
+        bundle_dir = wx.GetApp().get_install_dir()
         plugins_path = os.path.join(bundle_dir, "plugins")
         logger.debug("载入解析模块路径: %s", plugins_path)
         if plugin_name+".py" in os.listdir(plugins_path):

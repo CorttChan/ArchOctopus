@@ -426,7 +426,7 @@ class BaseParser(threading.Thread):
                 if not self.is_index:
                     del item_data["item_index"]
 
-                self.logger.info("解析项目: %s", item_data["item_url"])
+                self.logger.debug("解析项目: %s", item_data["item_url"])
 
                 # # 通过查询urls表, 判断该条目是否已下载过, True:直接从之前下载的本地位置复制一份副本到新目录下.
                 # is_exist_result = self.is_url_exist(_item_url)
