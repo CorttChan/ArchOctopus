@@ -24,7 +24,7 @@ jobs:
   # job's id
   release:
     # job's name
-    name: build and release electron app
+    name: build and release archoctopus app
 
     # the type of machine to run the job on
     runs-on: ${{ matrix.os }}
@@ -74,7 +74,7 @@ jobs:
           scoop install nsis
 
       - name: build windows app
-        if: matrix.os == 'windows-2019'
+        if: matrix.os == 'windows-latest'
         run: |
           pip install -r requirements-dev-msw.txt
           echo ${{ github.ref }}

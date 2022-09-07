@@ -1,6 +1,6 @@
 # pyinstaller打包
 echo 'pyinstaller start'
-pyinstaller --log-level=DEBUG --distpath='./release/dist' --workpath='./release/build' --noconfirm ./build.spec
+pyinstaller --log-level=DEBUG --distpath='./release/dist' --workpath='./release/build' --noconfirm ./release/build-osx/build.spec
 echo 'pyinstaller completed'
 
 echo 'making dmg...'
@@ -8,7 +8,8 @@ echo 'making dmg...'
 APP_NAME='ArchOctopus'
 VERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString "./release/dist/${APP_NAME}.app/Contents/Info.plist")
 mkdir -p "./release/dist/v${VERSION}"
-DMG_BACKGROUND_IMG="./release/build-osx/background.png"
+BACKGROUND_IMG_NAME="background.png"
+DMG_BACKGROUND_IMG="./release/build-osx/${BACKGROUND_IMG_NAME}"
 VOL_NAME="${APP_NAME}_v${VERSION}"
 DMG_TMP="${VOL_NAME}-temp.dmg"
 DMG_FINAL="./release/dist/v${VERSION}/${VOL_NAME}.dmg"
@@ -68,7 +69,7 @@ echo '
             set viewOptions to the icon view options of container window
             set arrangement of viewOptions to not arranged
             set icon size of viewOptions to 100
-            set background picture of viewOptions to file ".background:'"${DMG_BACKGROUND_IMG}"'"
+            set background picture of viewOptions to file ".background:'"${BACKGROUND_IMG_NAME}"'"
             set position of item "'"${APP_NAME}"'.app" of container window to {200, 240}
             set position of item "Applications" of container window to {420, 240}
             update without registering applications
