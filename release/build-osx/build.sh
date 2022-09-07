@@ -1,21 +1,21 @@
 # pyinstaller打包
 echo 'pyinstaller start'
-pyinstaller --log-level=DEBUG --distpath='./dist' --workpath='./build' --noconfirm ./build.spec
+pyinstaller --log-level=DEBUG --distpath='./release/dist' --workpath='./release/build' --noconfirm ./build.spec
 echo 'pyinstaller completed'
 
 echo 'making dmg...'
 # 基本信息
 APP_NAME='ArchOctopus'
-VERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString "./dist/${APP_NAME}.app/Contents/Info.plist")
-mkdir -p "v${VERSION}"
-DMG_BACKGROUND_IMG="background.png"
+VERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString "./release/dist/${APP_NAME}.app/Contents/Info.plist")
+mkdir -p "./release/dist/v${VERSION}"
+DMG_BACKGROUND_IMG="./release/build-osx/background.png"
 VOL_NAME="${APP_NAME}_v${VERSION}"
 DMG_TMP="${VOL_NAME}-temp.dmg"
-DMG_FINAL="v${VERSION}/${VOL_NAME}.dmg"
+DMG_FINAL="./release/dist/v${VERSION}/${VOL_NAME}.dmg"
 STAGING_DIR="./Install"
 
 # 清理文件夹
-rm -rf "${STAGING_DIR}" "${DMG_TMP}" "${DMG_FINAL}"
+rm -rf "${STAGING_DIR}" "${DMG_TMP}"
 
 echo "${VOL_NAME}"
 echo "${APP_NAME}"
@@ -23,7 +23,7 @@ echo "${VERSION}"
 
 # 创建文件夹,拷贝,计算
 mkdir -p "${STAGING_DIR}"
-cp -rpf "./dist/${APP_NAME}.app" "${STAGING_DIR}"
+cp -rpf "./release/dist/${APP_NAME}.app" "${STAGING_DIR}"
 SIZE=$(du -sh ${STAGING_DIR} | sed 's/\([0-9]*\)M\(.*\)/\1/')
 SIZE=$(echo "${SIZE}" + 1.0 | bc | awk '{print int($1+0.5)}')
 echo "${SIZE}"
@@ -94,7 +94,4 @@ hdiutil convert "${DMG_TMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_FINAL
 # 清理文件夹
 rm -rf "${DMG_TMP}"
 rm -rf "${STAGING_DIR}"
-rm -rf "./build"
-rm -rf "./dist"
 echo 'Done.'
-exit

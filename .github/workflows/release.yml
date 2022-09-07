@@ -1,11 +1,23 @@
 # Workflow's name
 name: Build ArchOctopus For Win/Mac
 
-# Workflow's trigger
+## Workflow's trigger
+#on:
+#  push:
+#    tags:
+#      - "v*"
+
+# 手动触发测试
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'debug'
+      tags:
+        description: 'Test build release'
+        required: true
 
 # Workflow's jobs
 jobs:
@@ -21,13 +33,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, macos-latest]
+        os: [windows-latest, macos-latest]
 
     # create steps
     steps:
       # step1: check out repository
       - name: Check out git repository
         uses: actions/checkout@v3
+        with:
+          ref: dev
 
       # step2: set up python
       - name: Set up Python 3.8
@@ -48,40 +62,42 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           pip install -r requirements-dev-osx.txt
-          cd ./release/build-osx
-          source ./build.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          source ./release/build-osx/build.sh
+
+      - name: Install NSIS for win
+        if: matrix.os == 'windows-latest'
+        run: |
+          iwr -useb get.scoop.sh -outfile 'install.ps1'
+          .\install.ps1 -RunAsAdmin
+          scoop update
+          scoop bucket add extras
+          scoop install nsis
 
       - name: build windows app
         if: matrix.os == 'windows-2019'
         run: |
           pip install -r requirements-dev-msw.txt
-          cd .\release\build-msw
-          .\build.bat
-        env:
-          GH_TOKEN: bef0b46667d2b13f8asdasdasd762873af59f71c
+          echo ${{ github.ref }}
+          .\release\build-msw\build.bat v2.0.2
 
-      # step5: create release
-      - name: release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: "dist_electron/**"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      # step5: create release
+#      - name: release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: "dist_electron/**"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # step6: Create dir
-      - name: Create release dir
-        run: |
-          mkdir v
-
-      # step7: ftp upload
+      # step6: ftp upload
       - name: Upload test result
         uses: SamKirkland/FTP-Deploy-Action@4.3.2
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./tests/
+          local-dir: ./release/dist/
           server-dir: ./app/release/
+          exclude: |
+            ArchOctopus/**
+            *.app

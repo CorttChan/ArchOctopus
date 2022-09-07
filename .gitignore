@@ -142,3 +142,6 @@ release/build-osx/dist/
 
 # tmp
 tmp/
+
+# release
+release/v*.*.*/
