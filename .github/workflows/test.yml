@@ -38,6 +38,6 @@ jobs:
         local-dir: ./tests/
         server-dir: ./app/tests/
         exclude: |
-          **/assets
+          assets/**
           *.py
           *.sh

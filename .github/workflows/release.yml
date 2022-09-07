@@ -100,4 +100,4 @@ jobs:
           server-dir: ./app/release/
           exclude: |
             ArchOctopus/**
-            *.app
+            *.app/**
