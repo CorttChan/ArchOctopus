@@ -127,7 +127,7 @@ class ParseTestCase(unittest.TestCase):
 if __name__ == '__main__':
     # unittest.main()
 
-    with open('./TestResult.txt', 'w') as f:
+    with open('./TestResult.txt', 'w', encoding="utf-8") as f:
         runner = unittest.TextTestRunner(stream=f, verbosity=2)
         unittest.main(testRunner=runner)
 
