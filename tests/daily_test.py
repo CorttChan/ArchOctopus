@@ -4,6 +4,7 @@
 import os
 import re
 import json
+from datetime import datetime, timedelta
 
 
 os.chdir(os.path.dirname(__file__))
@@ -30,9 +31,9 @@ def get_test_result(result_file):
             status = True if r[1] == "ok" else False
             if name in test_result:
                 test_result[name]["status"] = status
-                test_result[name]["result"].append(r)
+                test_result[name]["tests"].append(r)
             else:
-                test_result[name] = {"status": status, "result": [r, ]}
+                test_result[name] = {"status": status, "tests": [r, ]}
     return test_result
 
 
@@ -41,12 +42,13 @@ def build_result_json():
     plugins_path = "../archoctopus/plugins"
     test_result = get_test_result('./TestResult.txt')
 
-    result_dict = {}
+    date_now = datetime.utcnow()+timedelta(hours=8)
+    result_dict = {"date": date_now.strftime("%Y-%m-%d %H:%M:%S"), "result": {}}
     for name in get_plugins_name(plugins_path):
         if name in test_result:
-            result_dict[name] = test_result[name]
+            result_dict["result"][name] = test_result[name]
         else:
-            result_dict[name] = {"status": None, }
+            result_dict["result"][name] = {"status": None, }
 
     with open("./test_plugin_result", "w", encoding="utf-8") as f:
         json.dump(result_dict, f)
