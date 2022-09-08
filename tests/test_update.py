@@ -1,8 +1,13 @@
 import unittest
 from subprocess import Popen
+import sys
+import os
 
 import wx
 import wx.adv
+
+os.chdir(os.path.dirname(__file__))
+sys.path.extend(["../", ])
 
 from archoctopus.update import Update
 

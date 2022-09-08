@@ -16,15 +16,29 @@ from archoctopus.version import VERSION
 TEST_UPDATE_URL = "http://127.0.0.1:8000/test_release_version"
 TEST_PLUGIN_VERSION_URL = "http://127.0.0.1:8000/test_plugin_version"
 
-# github.com
-GITHUB_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/release_version"
-GITHUB_PLUGIN_VERSION_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/plugin_version"
-GITHUB_PLUGIN_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/plugins/{plugin_name}"
+# #### v2.0.1 ####
 
-# gitee.com
-GITEE_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/release_version"
-GITEE_PLUGIN_VERSION_URL = "https://gitee.com/corttchan/ArchOctopus/raw/main/plugin_version"
-GITEE_PLUGIN_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/plugins/{plugin_name}"
+# # GitHub
+# GITHUB_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/release_version"
+# GITHUB_PLUGIN_VERSION_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/plugin_version"
+# GITHUB_PLUGIN_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/plugins/{plugin_name}"
+#
+# # Gitee
+# GITEE_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/release_version"
+# GITEE_PLUGIN_VERSION_URL = "https://gitee.com/corttchan/ArchOctopus/raw/main/plugin_version"
+# GITEE_PLUGIN_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/plugins/{plugin_name}"
+
+# #### end ####
+
+# Github
+GITHUB_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/update/release_version"
+GITHUB_PLUGIN_VERSION_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/update/plugin_version"
+GITHUB_PLUGIN_UPDATE_URL = "https://github.com/CorttChan/ArchOctopus/raw/main/archoctopus/plugins/{plugin_name}"
+
+# Gitee
+GITEE_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/update/release_version"
+GITEE_PLUGIN_VERSION_URL = "https://gitee.com/corttchan/ArchOctopus/raw/main/update/plugin_version"
+GITEE_PLUGIN_UPDATE_URL = "https://gitee.com/CorttChan/ArchOctopus/raw/main/archoctopus/plugins/{plugin_name}"
 
 
 class Update(threading.Thread):
@@ -42,8 +56,12 @@ class Update(threading.Thread):
     def run(self):
         urls = (TEST_UPDATE_URL,) if self.test else (GITEE_UPDATE_URL, GITHUB_UPDATE_URL)
         for url in urls:
-            req = httpx.get(url)
-            req.raise_for_status()
+            try:
+                req = httpx.get(url, follow_redirects=True)
+                req.raise_for_status()
+            except (httpx.HTTPStatusError, httpx.ConnectTimeout):
+                self.logger.error("update访问失败: %s", url, exc_info=True)
+                continue
 
             info = req.json()
             if LooseVersion(info["version"]) > LooseVersion(VERSION):
@@ -80,14 +98,17 @@ class PluginUpdate(threading.Thread):
 
         self.logger = logging.getLogger(APP_NAME)
 
-    @staticmethod
-    def download_plugin(plugin_name, plugin_file):
+    def download_plugin(self, plugin_name, plugin_file) -> bool:
         gitee_url = GITEE_PLUGIN_UPDATE_URL.format(plugin_name=plugin_name)
         github_url = GITHUB_PLUGIN_UPDATE_URL.format(plugin_name=plugin_name)
 
         for url in (gitee_url, github_url):
-            req = httpx.get(url)
-            req.raise_for_status()
+            try:
+                req = httpx.get(url, follow_redirects=True)
+                req.raise_for_status()
+            except (httpx.HTTPStatusError, httpx.ConnectTimeout):
+                self.logger.error("update访问失败: %s", url, exc_info=True)
+                continue
 
             try:
                 with open(plugin_file, 'w', encoding="utf-8") as f:
@@ -106,8 +127,12 @@ class PluginUpdate(threading.Thread):
 
         urls = (TEST_PLUGIN_VERSION_URL,) if self.test else (GITEE_PLUGIN_VERSION_URL, GITHUB_PLUGIN_VERSION_URL)
         for url in urls:
-            req = httpx.get(url)
-            req.raise_for_status()
+            try:
+                req = httpx.get(url, follow_redirects=True)
+                req.raise_for_status()
+            except (httpx.HTTPStatusError, httpx.ConnectTimeout):
+                self.logger.error("update访问失败: %s", url, exc_info=True)
+                continue
 
             info: dict = req.json()
 
