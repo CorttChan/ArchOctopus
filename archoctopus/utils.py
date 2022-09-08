@@ -13,7 +13,7 @@ from io import BytesIO
 import imghdr
 
 import wx
-from httpx import ProxyError, HTTPError, StreamError, InvalidURL, CookieConflict, TimeoutException
+from httpx import ProxyError, HTTPError, StreamError, InvalidURL, CookieConflict, TimeoutException, HTTPStatusError
 
 from archoctopus.constants import APP_NAME
 
@@ -107,13 +107,16 @@ def retry(times=3):
                 try:
                     result = func(self, *args, **kwargs)
                 except TimeoutException as e:       # 仅超时错误重试
-                    self.logger.info("<请求次数 - %s>: %s", i, e)
-                    time.sleep(1)
+                    self.logger.error("<请求次数 - %s>: %s", i, e, exc_info=True)
+                    time.sleep(0.5)
                 except ProxyError as e:             # 单独捕捉代理错误
-                    self.logger.info("ProxyError错误: %s", e)
+                    self.logger.error("ProxyError错误: %s", e, exc_info=True)
                     break
-                except (HTTPError, StreamError, InvalidURL, CookieConflict) as e:
-                    self.logger.info("<请求次数: %s>网络请求错误: %s", i, e)
+                except (HTTPError, StreamError, InvalidURL, CookieConflict, HTTPStatusError) as e:
+                    self.logger.error("<请求次数: %s>网络请求错误: %s", i, e, exc_info=True)
+                    break
+                except RuntimeError as e:
+                    self.logger.error(e, exc_info=True)
                     break
                 else:
                     return result

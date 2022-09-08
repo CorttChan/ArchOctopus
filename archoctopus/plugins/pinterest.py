@@ -4,8 +4,8 @@ url: https://www.pinterest.com/
 """
 
 # name: pinterest.py
-# version: 0.0.4
-# date: 2022/08/23 13:50
+# version: 0.0.5
+# date: 2022/09/08 17:00
 # desc:
 
 import json
@@ -40,6 +40,7 @@ VISUAL_LIVE_SEARCH_RESOURCE = 'https://www.pinterest.com/resource/VisualLiveSear
 
 # pin
 RELATED_MODULES_RESOURCE = 'https://www.pinterest.com/resource/RelatedModulesResource/get/'
+RELATED_PIN_FEED_RESOURCE = 'https://www.pinterest.com/resource/RelatedPinFeedResource/get/'
 
 # user
 USER_RESOURCE = 'https://www.pinterest.com/resource/UserResource/get/'
@@ -87,6 +88,10 @@ class Parser(BaseParser):
         super().__init__(*args, **kwargs)
 
         self.friend_name = "Pinterest"
+
+        # 根据cookies判断是否未登录状态
+        is_auth = self.session.cookies.get("_auth", ".pinterest.com")
+        self.is_auth = True if is_auth == "1" else False
 
     def parse_home(self, response):
         """
@@ -200,26 +205,54 @@ class Parser(BaseParser):
                 break
             if bookmarks and bookmarks[0] == '-end-':
                 break
-            options = {
-                "pin_id": pin_id,
-                "context_pin_ids": [],
-                "search_query": "",
-                "source": "deep_linking",
-                "top_level_source": "deep_linking",
-                "top_level_source_depth": 1,
-                "is_pdp": False,
-                "bookmarks": bookmarks,
-                "no_fetch_context_on_resource": False
-            }
-            params = build_get_params(options=options, source_url=source_url)
-            req = self.request("GET", RELATED_MODULES_RESOURCE, headers=self.get_json_headers(), params=params)
+
+            # 根据登录状态请求的api
+            # 登录状态 - RELATED_MODULES_RESOURCE
+            # 匿名状态 - RELATED_PIN_FEED_RESOURCE
+            if self.is_auth:
+                options = {
+                    "pin_id": pin_id,
+                    "context_pin_ids": [],
+                    "search_query": "",
+                    "source": "deep_linking",
+                    "top_level_source": "deep_linking",
+                    "top_level_source_depth": 1,
+                    "is_pdp": False,
+                    "bookmarks": bookmarks,
+                    "no_fetch_context_on_resource": False
+                }
+                params = build_get_params(options=options, source_url=source_url)
+                req = self.request("GET", RELATED_MODULES_RESOURCE, headers=self.get_json_headers(), params=params)
+            else:
+                options = {
+                    "field_set_key": "unauth_react",
+                    "page_size": 12,
+                    "pin": pin_id,
+                    "prepend": False,
+                    "add_vase": True,
+                    "show_seo_canonical_pins": True,
+                    "source": "unknown",
+                    "top_level_source": "unknown",
+                    "top_level_source_depth": 1,
+                    "bookmarks": bookmarks,
+                }
+                params = build_get_params(options=options, source_url=source_url)
+                req = self.request("GET", RELATED_PIN_FEED_RESOURCE, headers=self.get_json_headers(), params=params)
             resp = req.json()
+
+            # # 调试片段
+            # with open("..\\debug\\pinterest_login.json", 'w', encoding="utf-8") as f:
+            #     f.write(str(resp))
+
             bookmarks = resp['resource']['options']['bookmarks']
             result = resp['resource_response']['data']
             # 循环退出条件
             if result:
                 for pin in result:
-                    if pin["type"] == "pin" and pin["ad_match_reason"] == 0:  # 避免广告pin
+                    # 避免广告pin
+                    # RELATED_MODULES_RESOURCE -> 'ad_match_reason'键 [0/"None"]
+                    # RELATED_PIN_FEED_RESOURCE -> 无'ad_match_reason'键
+                    if pin["type"] == "pin" and pin.get("ad_match_reason", 0) == 0:
                         item_data = {
                             "sub_dir": "related-类似图片",
                             "item_url": pin["images"]["orig"]["url"],

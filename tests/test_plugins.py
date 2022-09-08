@@ -8,6 +8,7 @@ os.chdir(os.path.dirname(__file__))
 sys.path.extend(["../", ])
 
 from archoctopus.plugins import huaban, archdaily, zcool, pinterest
+# from archoctopus import cookies
 
 
 def run_parser(url, parser) -> tuple:
@@ -21,7 +22,8 @@ def run_parser(url, parser) -> tuple:
         pause_event=None,
         running_event=None,
         threads_count=1,
-        cookies=None,
+        # cookies=cookies.load(),   # 本地测试
+        cookies=None,               # gh-action测试
         proxies=None
     )
     parse_thread.setDaemon(True)
@@ -104,24 +106,32 @@ class ParseTestCase(unittest.TestCase):
     def test_pinterest_pin(self):
         """
         测试'pinterest.py'解析pin函数
-        测试链接: https://www.zcool.com.cn/work/ZNTM5NjI3MzY=.html
-        测试时间: 2022/09/02
+        测试链接: https://www.pinterest.com/pin/358528820349460827/
+        测试时间: 2022/09/08
         board信息:
-            名称: 新中式！_空间_家装设计_金该画图壹哥
-            文件数: 16
+            名称: Pin-358528820349460827
+            文件数: >=20
         """
-        pass
+        url = "https://www.pinterest.com/pin/358528820349460827/"
+        name, count = run_parser(url=url, parser=pinterest.Parser)
+
+        self.assertEqual(name, "Pin-358528820349460827")
+        self.assertGreaterEqual(count, 20)
 
     def test_pinterest_board(self):
         """
         测试'pinterest.py'解析board函数
-        测试链接: https://www.zcool.com.cn/work/ZNTM5NjI3MzY=.html
+        测试链接: https://www.pinterest.com/mumu0216/%E5%BB%BA%E7%AD%91/
         测试时间: 2022/09/02
         board信息:
-            名称: 新中式！_空间_家装设计_金该画图壹哥
-            文件数: 16
+            名称: Board-'mumu0216-建筑'
+            文件数: >=200
         """
-        pass
+        url = "https://www.pinterest.com/mumu0216/%E5%BB%BA%E7%AD%91/"
+        name, count = run_parser(url=url, parser=pinterest.Parser)
+
+        self.assertEqual(name, "Board-'mumu0216-建筑'")
+        self.assertGreaterEqual(count, 200)
 
 
 if __name__ == '__main__':
@@ -132,5 +142,5 @@ if __name__ == '__main__':
         unittest.main(testRunner=runner)
 
         # suite = unittest.TestSuite()
-        # suite.addTest(ParseTestCase("test_zcool_article"))
+        # suite.addTest(ParseTestCase("test_pinterest_pin"))
         # runner.run(suite)

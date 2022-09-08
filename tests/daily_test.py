@@ -22,7 +22,7 @@ def get_plugins_name(plugins_path):
 def get_test_result(result_file):
     test_result = {}
 
-    status_pat = re.compile("(test_.*?) \\(__main__\\.ParseTestCase\\).*? \\.\\.\\. (ok|FAIL)\n", flags=re.S)
+    status_pat = re.compile("(test_.*?) \\(__main__\\.ParseTestCase\\).*? \\.\\.\\. (ok|FAIL|ERROR)\n", flags=re.S)
     name_pat = re.compile("test_(.*)_")
     with open(result_file, 'r', encoding='utf-8') as f:
         result = status_pat.findall(f.read())

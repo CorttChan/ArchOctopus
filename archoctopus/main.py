@@ -202,9 +202,10 @@ class AoMainFrame(wx_gui.MyFrame):
             wx.CallLater(5000, self.sync.start_preload)     # 延时执行账户信息检测, 避免启动等待时间过长
 
         # 更新插件
-        check_plugin_thread = PluginUpdate(self)
-        check_plugin_thread.setDaemon(True)
-        check_plugin_thread.start()
+        if getattr(sys, 'frozen', False):
+            check_plugin_thread = PluginUpdate(self)
+            check_plugin_thread.setDaemon(True)
+            check_plugin_thread.start()
 
         # event
         self.Bind(wx.EVT_MOVE, self.on_move)
