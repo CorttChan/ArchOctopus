@@ -40,15 +40,18 @@ def get_test_result(result_file):
 def build_result_json():
     """"""
     plugins_path = "../archoctopus/plugins"
-    test_result = get_test_result('./TestResult.txt')
-
-    date_now = datetime.utcnow()+timedelta(hours=8)
+    date_now = datetime.utcnow() + timedelta(hours=8)
     result_dict = {"date": date_now.strftime("%Y-%m-%d %H:%M:%S"), "result": {}}
-    for name in get_plugins_name(plugins_path):
-        if name in test_result:
-            result_dict["result"][name] = test_result[name]
-        else:
-            result_dict["result"][name] = {"status": None, }
+
+    if os.path.exists('./TestResult.txt'):
+        test_result = get_test_result('./TestResult.txt')
+        for name in get_plugins_name(plugins_path):
+            if name in test_result:
+                result_dict["result"][name] = test_result[name]
+            else:
+                result_dict["result"][name] = {"status": None, }
+    else:
+        result_dict["error"] = "TestResult.txt file not exists"
 
     with open("./test_plugin_result", "w", encoding="utf-8") as f:
         json.dump(result_dict, f)
