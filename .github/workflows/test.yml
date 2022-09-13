@@ -28,8 +28,7 @@ jobs:
         if [ -f requirements-dev-osx.txt ]; then pip install -r requirements-dev-osx.txt; fi
     - name: Test
       run: |
-        python ./tests/test_plugins.py
-        python ./tests/daily_test.py
+        source ./tests/daily_test.sh
     - name: Upload test result
       uses: SamKirkland/FTP-Deploy-Action@4.3.2
       with:
