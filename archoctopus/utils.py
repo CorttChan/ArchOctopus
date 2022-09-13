@@ -107,17 +107,19 @@ def retry(times=3):
                 try:
                     result = func(self, *args, **kwargs)
                 except TimeoutException as e:       # 仅超时错误重试
-                    self.logger.error("<请求次数 - %s>: %s", i, e, exc_info=True)
+                    self.logger.error("<请求次数 - %s>: %s", i, e)
                     time.sleep(0.5)
+                    if times == 2:
+                        raise
                 except ProxyError as e:             # 单独捕捉代理错误
-                    self.logger.error("ProxyError错误: %s", e, exc_info=True)
-                    break
+                    self.logger.error("ProxyError错误: %s", e)
+                    raise
                 except (HTTPError, StreamError, InvalidURL, CookieConflict, HTTPStatusError) as e:
-                    self.logger.error("<请求次数: %s>网络请求错误: %s", i, e, exc_info=True)
-                    break
+                    self.logger.error("网络请求错误: %s", e)
+                    raise
                 except RuntimeError as e:
-                    self.logger.error(e, exc_info=True)
-                    break
+                    self.logger.error("RuntimeError: %s", e)
+                    raise
                 else:
                     return result
 
@@ -302,10 +304,3 @@ class UpdateCover(threading.Thread):
             if cover_bitmap is None:
                 continue
             wx.CallAfter(self.parent.call_update_cover, board_panel_id, cover_bitmap, (board_info[0], board_info[1]))
-
-
-# if __name__ == '__main__':
-#     app = wx.App()
-#     app.MainLoop()
-#     cover_bitmap = gen_cover_image(tuple())
-#     cover_bitmap.SaveFile("cover.png", type=wx.BITMAP_TYPE_PNG)

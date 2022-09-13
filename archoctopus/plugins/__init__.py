@@ -365,7 +365,6 @@ class BaseParser(threading.Thread):
         self.logger.info("解析开始: %s --> %s", self.friend_name, self.url)
         try:
             response = self.request("GET", self.url)
-            response.raise_for_status()
             # 判断是否时图片链接
             content_type = response.headers.get('content-type')
             self.logger.debug("解析页面类型: %s", content_type)
@@ -441,7 +440,8 @@ class BaseParser(threading.Thread):
                 self.count += 1
                 self.logger.debug("解析计数: %s", self.count)
         except Exception as e:
-            self.logger.error("解析错误: %s - %s", e, self.url, exc_info=True)
+            # self.logger.error("解析错误: %s - %s", e, self.url, exc_info=True)
+            self.logger.error("解析错误: %s - %s", e, self.url)
         finally:
             # 更新面板信息
             if self.parent is not None:

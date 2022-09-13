@@ -32,7 +32,10 @@ class Parser(BaseParser):
     def get_title(self, html):
         title = super(Parser, self).get_title(html)
         self.logger.debug("title: %s", title)
-        title = re.sub(" - 原创作品 - 站酷 \\(ZCOOL\\)$| - 打开站酷，发现更好的设计！$|_原创作品-站酷ZCOOL", "", title)
+        title = re.sub(" - 原创作品 - 站酷 \\(ZCOOL\\)"
+                       "$| - 打开站酷，发现更好的设计！"
+                       "$|_原创作品-站酷ZCOOL"
+                       "$|-站酷ZCOOL", "", title)
         return title
 
     def api_parse(self, parse_id, title):
