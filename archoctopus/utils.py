@@ -107,8 +107,10 @@ def retry(times=3):
                 try:
                     result = func(self, *args, **kwargs)
                 except TimeoutException as e:       # 仅超时错误重试
-                    self.logger.error("<请求次数 - %s>: %s", i, e, exc_info=True)
+                    self.logger.error("<请求次数 - %s>: %s", i, e)
                     time.sleep(0.5)
+                    if times == 2:
+                        raise
                 except ProxyError as e:             # 单独捕捉代理错误
                     self.logger.error("ProxyError错误: %s", e)
                     raise

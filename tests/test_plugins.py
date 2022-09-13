@@ -94,13 +94,13 @@ class ParseTestCase(unittest.TestCase):
         测试链接: https://www.zcool.com.cn/work/ZNTM5NjI3MzY=.html
         测试时间: 2022/09/02
         board信息:
-            名称: 新中式！_空间_家装设计_金该画图壹哥
+            名称: 新中式！_金该画图壹哥
             文件数: 16
         """
         url = "https://www.zcool.com.cn/work/ZNTM5NjI3MzY=.html"
         name, count = run_parser(url=url, parser=zcool.Parser)
 
-        self.assertEqual(name, "新中式！_空间_家装设计_金该画图壹哥")
+        self.assertEqual(name, "新中式！_金该画图壹哥")
         self.assertEqual(count, 16)
 
     def test_pinterest_pin(self):

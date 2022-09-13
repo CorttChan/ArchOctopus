@@ -440,7 +440,8 @@ class BaseParser(threading.Thread):
                 self.count += 1
                 self.logger.debug("解析计数: %s", self.count)
         except Exception as e:
-            self.logger.error("解析错误: %s - %s", e, self.url, exc_info=True)
+            # self.logger.error("解析错误: %s - %s", e, self.url, exc_info=True)
+            self.logger.error("解析错误: %s - %s", e, self.url)
         finally:
             # 更新面板信息
             if self.parent is not None:
