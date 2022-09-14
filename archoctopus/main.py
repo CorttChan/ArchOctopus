@@ -344,7 +344,7 @@ class AoMainFrame(wx_gui.MyFrame):
         dlg.Destroy()
 
     def check_update(self, event):
-        check_update_thread = Update(self)
+        check_update_thread = Update(self, test=False)
         check_update_thread.setDaemon(True)
         check_update_thread.start()
 
@@ -374,7 +374,7 @@ class AoMainFrame(wx_gui.MyFrame):
                 del self.debug_dlg
                 del self.frame_handler
         # 检查更新
-        if self.cfg.ReadBool("/General/auto_update", defaultVal=False):
+        if self.cfg.ReadBool("/General/auto_update", defaultVal=True):
             self.check_update(None)
         # 检查刷新代理信息
         proxy_host = self.cfg.Read("/Proxy/host", defaultVal="")

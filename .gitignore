@@ -145,3 +145,8 @@ tmp/
 
 # release
 release/v*.*.*/
+
+# wxGlade
+*.wxg.bak
+*.py.bak
+debug/
