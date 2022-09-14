@@ -65,22 +65,35 @@ class DebugFrameHandler(logging.StreamHandler):
     """"""
 
     # ----------------------------------------------------------------------
-    def __init__(self, textctrl):
+    def __init__(self, tc):
         """"""
+        self.tc = tc
+        # fmt = logging.Formatter(fmt='%(asctime)s [%(levelname)s]-> %(message)s')
+        # self.setFormatter(fmt)
         logging.StreamHandler.__init__(self)
-        self.textctrl = textctrl
-        fmt = logging.Formatter(fmt='%(asctime)s [%(levelname)s]-> %(message)s')
-        self.setFormatter(fmt)
 
     # ----------------------------------------------------------------------
     def emit(self, record):
         """Constructor"""
         try:
             msg = self.format(record)
-            self.textctrl.WriteText(msg + "\n")
+            self.tc.WriteText(msg + self.terminator)
             self.flush()
+        except RecursionError:  # See issue 36272
+            raise
         except Exception:
             self.handleError(record)
+
+        # try:
+        #     msg = self.format(record)
+        #     stream = self.stream
+        #     # issue 35046: merged two stream.writes into one.
+        #     stream.write(msg + self.terminator)
+        #     self.flush()
+        # except RecursionError:  # See issue 36272
+        #     raise
+        # except Exception:
+        #     self.handleError(record)
 
 
 class SettingValidator(wx.Validator):
@@ -173,9 +186,6 @@ class AoMainFrame(wx_gui.MyFrame):
         self.previous_url = ""  # 用于判断系统粘贴板中的url是否已使用过
         self.running_task_count = 0  # 用于判断是否存在正在运行的Task实例
         self.proxies = None
-
-        # self.available_update_url = ""  # 可用更新链接
-        # self.available_update_version = ""  # 可用更新版本
 
         self.tbicon = TBicon(self)
         self.url_ctrl.SetHint("输入收集网址...")
@@ -352,12 +362,14 @@ class AoMainFrame(wx_gui.MyFrame):
                 self.debug_dlg.SetSize(debug_frame_size)
                 self.debug_dlg.Show()
                 # 添加DebugFrameHandler
-                self.frame_handler = DebugFrameHandler(self.debug_dlg.log_tc)
-                # self.frame_handler.setLevel("DEBUG")
+                # self.frame_handler = DebugFrameHandler(self.debug_dlg.log_tc)
+                self.frame_handler = logging.StreamHandler(stream=self.debug_dlg.log_tc)
+                self.logger.setLevel("DEBUG")
                 self.logger.addHandler(self.frame_handler)
         else:
             if hasattr(self, "debug_dlg"):
                 self.logger.removeHandler(self.frame_handler)
+                self.logger.setLevel("INFO")
                 self.debug_dlg.Destroy()
                 del self.debug_dlg
                 del self.frame_handler

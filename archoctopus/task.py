@@ -12,6 +12,7 @@ import re
 import weakref
 from urllib.parse import urlparse, unquote
 import logging
+from importlib import import_module
 
 import wx
 
@@ -60,31 +61,20 @@ def get_domain_from_url(url: str):
 #     return type(domain, (BaseParser,), {"friend_name": domain, "parse": parse})
 
 
-class CacheManager:
-    """解析库缓存管理器"""
-    def __init__(self):
-        self._cache = weakref.WeakValueDictionary()
-
-    def get_parser(self, name):
-        if name not in self._cache:
-            parser = Plugin.new(plugin_name=name)
-            self._cache[name] = parser
-            logger.debug("new_parser: %s", name)
-        else:
-            parser = self._cache[name]
-            logger.debug("cache_parser: %s", name)
-        return parser
-
-    def clear(self):
-        self._cache.clear()
-
-
 class Plugin:
     """插件化调用解析类"""
-    manager = CacheManager()
+    manager = weakref.WeakValueDictionary()
 
-    def __init__(self):
-        raise RuntimeError("Plugin类禁止直接实例化, 应通过工厂函数调用. eg: plugin = get_plugin(url)")
+    def __new__(cls, name, *args, **kwargs):
+        if name in cls.manager:
+            instance = cls.manager[name]
+            logger.debug("cache_parser: %s", name)
+        else:
+            instance = cls._load(name)
+            cls.manager[name] = instance
+            logger.debug("new_parser: %s", name)
+
+        return instance(*args, **kwargs)
 
     @staticmethod
     def _load(plugin_name):
@@ -95,20 +85,15 @@ class Plugin:
         #     rule = cfg.Read(cfg_path)
         #     return get_custom_class(plugin_name, rule)     # 返回自定义规则解析类
 
+        # 内置规则-----------------
         bundle_dir = wx.GetApp().get_install_dir()
         plugins_path = os.path.join(bundle_dir, "plugins")
         logger.debug("载入解析模块路径: %s", plugins_path)
         if plugin_name+".py" in os.listdir(plugins_path):
-            plugin = __import__("plugins." + plugin_name, fromlist=[plugin_name])
-            logger.debug("载入解析模块: %s", plugin_name)
+            plugin = import_module("plugins." + plugin_name)
             return plugin.Parser        # 返回预定义解析模块
         else:
             return GeneralParser        # 返回通用解析模块
-
-    @classmethod
-    def new(cls, plugin_name):
-        parser = cls._load(plugin_name)
-        return parser
 
 
 class TaskItem:
@@ -158,8 +143,8 @@ class TaskItem:
         domain = get_domain_from_url(self.parent.task_info["url"])
         self.parent.task_info["domain"] = domain
         logger.debug("创建解析线程. \n任务参数: %s", self.parent.task_info)
-        parser = Plugin.manager.get_parser(name=domain)
-        parse_thread = parser(self.parent,
+        parse_thread = Plugin(domain,
+                              self.parent,
                               self.parent.task_info["url"],
                               self.parent.task_info["id"],
                               self.queue,
