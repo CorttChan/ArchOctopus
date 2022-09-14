@@ -102,7 +102,7 @@ class UrlParser:
         return self.parser.path
 
     def get_domain(self) -> str:
-        domain = unquote(self.parser.hostname)
+        domain = unquote(str(self.parser.hostname))
         replacements = [('www\\.|\\.com|\\.cn', ''), ('\\.', '_')]
         for _old, _new in replacements:
             domain = re.sub(_old, _new, domain)

@@ -24,4 +24,8 @@ python .\release\build-msw\build_nsi.py
 makensis /V4 /INPUTCHARSET UTF8 /DPRODUCT_VERSION=%1 .\release\build-msw\build.nsi
 echo nsis打包完成
 
+echo 开始删除ArchOctopus目录
+rmdir /S /Q .\release\dist\ArchOctopus
+echo 删除完成
+
 exit /b 0
