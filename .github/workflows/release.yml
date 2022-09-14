@@ -98,3 +98,4 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local_dir: ./release/dist/
           server_dir: ./app/release/
+          secure: false
