@@ -95,4 +95,8 @@ hdiutil convert "${DMG_TMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_FINAL
 # 清理文件夹
 rm -rf "${DMG_TMP}"
 rm -rf "${STAGING_DIR}"
+
+rm -rf ArchOctopus
+rm -rf ArchOctopus.app
+
 echo 'Done.'
