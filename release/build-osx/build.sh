@@ -96,7 +96,7 @@ hdiutil convert "${DMG_TMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_FINAL
 rm -rf "${DMG_TMP}"
 rm -rf "${STAGING_DIR}"
 
-rm -rf ArchOctopus
-rm -rf ArchOctopus.app
+rm -rf ./release/dist/"${APP_NAME}"
+rm -rf ./release/dist/"${APP_NAME}".app
 
 echo 'Done.'
