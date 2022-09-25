@@ -54,7 +54,7 @@ coll = COLLECT(exe,
 app = BUNDLE(coll,
              name='ArchOctopus.app',
              icon='./profile.icns',
-             version='2.0.2',
+             version='2.0.3',
              bundle_identifier=None,
              info_plist={
                 'NSPrincipalClass': 'NSApplication',
