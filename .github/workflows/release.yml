@@ -15,8 +15,8 @@ on:
         description: 'Log level'
         required: true
         default: 'debug'
-      tags:
-        description: 'Test build release'
+      version:
+        description: 'release version'
         required: true
 
 # Workflow's jobs
@@ -78,7 +78,7 @@ jobs:
         run: |
           pip install -r requirements-dev-msw.txt
           echo ${{ github.ref }}
-          .\release\build-msw\build.bat v2.0.2
+          .\release\build-msw\build.bat ${{ github.event.inputs.version }}
 
 #      # step5: create release
 #      - name: release

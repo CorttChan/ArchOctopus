@@ -1,3 +1,0 @@
-cd /Volumes/ArchOctopus_v2.0.1
-chflags hidden profile.icns
-chflags hidden dmg_background.png
