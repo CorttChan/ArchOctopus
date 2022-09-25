@@ -44,6 +44,7 @@ class Usage(threading.Thread):
 
         self.logger = logging.getLogger(APP_NAME)
         self.con = parent.con
+        self.netloc = parent.netloc
 
     def _num_history(self):
         sql = "SELECT COUNT(id) FROM history"
@@ -55,6 +56,11 @@ class Usage(threading.Thread):
         result = self.con.select(sql)
         status = [i[0] for i in result]
         return status
+
+    def _top_history(self):
+        sql = "SELECT domain, count(*) num from history GROUP by domain ORDER by num DESC LIMIT 10"
+        result = self.con.select(sql)
+        return result
 
     def _build_data(self):
         platform_name, platform_version = _platform()
@@ -69,7 +75,8 @@ class Usage(threading.Thread):
                 "archdaily": "archdaily" in status,
                 "huaban": "huaban" in status,
                 "pinterest": "pinterest" in status
-            }
+            },
+            "netloc": self.netloc
         }
         return usage_data
 
@@ -82,5 +89,6 @@ class Usage(threading.Thread):
             r = httpx.post(USAGE_API_URL, headers=headers, json=data)
             self.logger.debug("status: %s", r.status_code)
             r.raise_for_status()
+            self.logger.debug(r.text)
         except Exception as e:
             self.logger.error(str(e))

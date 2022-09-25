@@ -181,6 +181,7 @@ class AoMainFrame(wx_gui.MyFrame):
 
         self.cfg = wx.GetApp().cfg          # 全局配置对象
         self.con = wx.GetApp().con          # 数据库连接对象
+        self.netloc = wx.GetApp().netloc    # 任务网络地址
 
         self.is_auto_clip = True   # 自动粘贴板
         self.previous_url = ""  # 用于判断系统粘贴板中的url是否已使用过
@@ -565,6 +566,12 @@ class AoMainFrame(wx_gui.MyFrame):
             sql = "SELECT id FROM history WHERE url=?"
             task_id = self.con.select_one(sql, (raw_url,))[0]
 
+            netloc = urlparse(raw_url).netloc
+            if netloc in self.netloc:
+                self.netloc[netloc] += 1
+            else:
+                self.netloc[netloc] = 1
+
         # 判断重复下载时, 任务面板是否已创建
         for _item in self.sizer_8.GetChildren():
             _task_panel = _item.GetWindow()
@@ -615,6 +622,9 @@ class AoMainFrame(wx_gui.MyFrame):
         history_dlg = AoHistoryDlg(self)
         history_dlg.ShowModal()
         history_dlg.Destroy()
+
+    def on_open_report_link(self, event):
+        wx.LaunchDefaultBrowser(constants.REPORT_URL, flags=0)
 
     def on_open_donate_link(self, event):
         donate_dlg = AoDonateDlg(self)
@@ -1653,6 +1663,8 @@ class AoApp(wx_gui.MyApp):
 
         self.con = AoDatabase(db=get_database_file())
         # self.con = AoDatabase()
+
+        self.netloc = {}
 
         mainFrame = AoMainFrame(None, wx.ID_ANY, constants.APP_DISPLAY_NAME)
         self.SetTopWindow(mainFrame)

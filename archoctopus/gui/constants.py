@@ -31,8 +31,9 @@ SYNC = "sync.svg"
 SYNC_DISABLE = "sync_disabled.svg"
 SYNC_PROBLEM = "sync_problem.svg"
 
-SETTINGS = "settings.svg"
+SETTINGS = "tools.svg"
 HISTORY = "history.svg"
+REPORT = "report.svg"
 DONATE = "recommend.svg"
 
 ACCOUNT_CIRCLE = "account_circle.svg"
