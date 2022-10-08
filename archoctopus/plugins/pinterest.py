@@ -4,8 +4,8 @@ url: https://www.pinterest.com/
 """
 
 # name: pinterest.py
-# version: 0.0.5
-# date: 2022/09/08 17:00
+# version: 0.0.6
+# date: 2022/09/28 17:00
 # desc:
 
 import json
@@ -737,14 +737,14 @@ class Parser(BaseParser):
 
         # https://www.pinterest.com/kane8616/_saved/
         elif re.match("/(?!search|pin)[^/]*/_saved/?$", url_path):
-            result = re.search("/([^/]*)/_saved/?", self.url)
+            result = re.search("/([^/]*)/_saved/?", url_path)
             username = result.group(1)
             self.task_name = f"People-\'{username}\'"
             return self.call_parse(self.parse_people_saved)
 
         # https://www.pinterest.com/corttchan/render/
         elif re.match("/(?!search|pin)[^/]*/[^/]+/?$", url_path):
-            result = re.search("/([^/]*)/([^/]+)/?$", self.url)
+            result = re.search("/([^/]+)/([^/]+)/?$", url_path)
             username = result.group(1)
             slug = unquote(result.group(2))
             self.task_name = f"Board-\'{username}-{slug}\'"
@@ -752,14 +752,14 @@ class Parser(BaseParser):
 
         # https://www.pinterest.com/kane8616/_created/
         elif re.match("/(?!search|pin)[^/]+/_created/?$", url_path):
-            result = re.search("/([^/]*)/_saved/?", self.url)
+            result = re.search("/([^/]*)/_created/?", url_path)
             username = result.group(1)
             self.task_name = f"People-\'{username}-创建钉图\'"
             return self.call_parse(self.parse_people_created)
 
         # https://www.pinterest.com/corttchan/shopping-mall-facade/modern/
         elif re.match("/(?!search|pin)[^/]*/[^/]+/[^/]+/?$", url_path):
-            result = re.search("/([^/]*)/([^/]+)/([^/]+)/?$", self.url)
+            result = re.search("/([^/]*)/([^/]+)/([^/]+)/?$", url_path)
             username = result.group(1)
             slug = result.group(2)
             section_slug = result.group(3)
@@ -775,7 +775,3 @@ class Parser(BaseParser):
         # # https://www.pinterest.com/corttchan/design-tmp/_tools/organize/?organization_feed=False
         # elif re.match(".*?/_tools/organize/?$", url_path):
         #     return self.parse_organize
-
-
-if __name__ == '__main__':
-    pass
