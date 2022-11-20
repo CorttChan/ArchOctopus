@@ -225,9 +225,10 @@ def gen_match_image(image: wx.Image, width: int, height: int) -> wx.Image:
     return match_image
 
 
-def gen_cover_image(files: tuple):
+def gen_cover_image(files: tuple, window: wx.Dialog):
     """
     生成同步面板中Board封面图片
+    :param window:
     :param files:
     :return:
     """
@@ -246,7 +247,7 @@ def gen_cover_image(files: tuple):
     part_02 = (59, 62, 117, 0)
     part_03 = (59, 62, 117, 64)
 
-    cover_img = wx.Image(176, 126)
+    cover_img = wx.Image(window.FromDIP((176, 126)))
     cover_img.Replace(0, 0, 0, 255, 255, 255)
 
     new_files = [None, None, None]
@@ -255,16 +256,16 @@ def gen_cover_image(files: tuple):
 
     for part, file in zip((part_01, part_02, part_03), new_files):
         if file is None or not os.path.isfile(file):
-            match_image = wx.Image(*part[:2])
+            match_image = wx.Image(window.FromDIP(wx.Size(part[:2])))
             match_image.Replace(0, 0, 0, 220, 220, 220)
         else:
             raw_img = wx.Image(file, wx.BITMAP_TYPE_ANY)
             if raw_img.IsOk():
-                match_image = gen_match_image(raw_img, *part[:2])
+                match_image = gen_match_image(raw_img, *window.FromDIP(wx.Size(part[:2])))
             else:
-                match_image = wx.Image(*part[:2])
+                match_image = wx.Image(window.FromDIP(wx.Size(part[:2])))
                 match_image.Replace(0, 0, 0, 200, 200, 200)
-        cover_img.Paste(match_image, *part[2:])
+        cover_img.Paste(match_image, *window.FromDIP(wx.Size(part[2:])))
 
     return wx.Bitmap(cover_img)
 
@@ -300,7 +301,7 @@ class UpdateCover(threading.Thread):
                                              item[0] or "",
                                              item[1])
                                 for item in cover_files)
-            cover_bitmap = gen_cover_image(cover_files)
+            cover_bitmap = gen_cover_image(cover_files, window=self.parent)
             if cover_bitmap is None:
                 continue
             wx.CallAfter(self.parent.call_update_cover, board_panel_id, cover_bitmap, (board_info[0], board_info[1]))

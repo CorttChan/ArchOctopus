@@ -12,8 +12,11 @@ APP_ABOUT = "本程序起源于本人日常工作上的需要。\n" \
 APP_ICON = "icons/profile-128x.ico"
 APP_TB_ICON = "icons/profile-64x.ico"
 APP_ABOUT_ICON = "icons/profile-130x.png"
-APP_ANIM = "animation_octopus_250.gif"
-
+APP_ANIM_BUNDLE = (
+    "octopus_250x.gif",
+    "octopus_375x.gif",
+    "octopus_500x.gif",
+)
 
 DOWNLOAD = "download.svg"
 
@@ -50,8 +53,8 @@ CLOSE_BTN = "close.png"
 EDIT_BTN = "edit.png"
 CHECK_BTN = "check.png"
 
-DONATE_25 = "donate/payment-25.png"
-DONATE_50 = "donate/payment-50.png"
-DONATE_75 = "donate/payment-75.png"
-DONATE_100 = "donate/payment-100.png"
-DONATE_OTHER = "donate/payment-other.png"
+DONATE_25_BUNDLE = ("donate/payment-25_1x.png", "donate/payment-25_2x.png")
+DONATE_50_BUNDLE = ("donate/payment-50_1x.png", "donate/payment-50_2x.png")
+DONATE_75_BUNDLE = ("donate/payment-75_1x.png", "donate/payment-75_2x.png")
+DONATE_100_BUNDLE = ("donate/payment-100_1x.png", "donate/payment-100_2x.png")
+DONATE_OTHER_BUNDLE = ("donate/payment-other_1x.png", "donate/payment-other_2x.png")

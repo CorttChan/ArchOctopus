@@ -1,5 +1,3 @@
-
-![Profile image for ArchOctopus](./docs/images/profile-130x.png)
 # ArchOctopus -- 建筑师收集助手
 #### ArchOctopus: 以设计师群体为目标,简单快速收集设计素材的批量下载工具.
 
@@ -11,7 +9,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/CorttChan/ArchOctopus.svg?style=flat-square&logo=github)](https://github.com/CorttChan/ArchOctopus/releases/latest)
 [![GitHub downloads](https://img.shields.io/github/downloads/CorttChan/ArchOctopus/total.svg?style=flat-square&logo=github)](https://github.com/CorttChan/ArchOctopus/releases/latest)
 
-
+![演示](docs/images/demo/gui_mac.png "演示")
 
 ## 主要功能:
 1. 简洁的用户界面, 方便的多任务管理
@@ -57,20 +55,6 @@ pip install requirements
 ```commandline
 python3 main.py
 ```
-
-## 演示
-![下载演示](./docs/images/demo/gui_mac.png)
-
-![下载演示](./docs/images/demo/gui_main.png)
-
-![设置演示](./docs/images/demo/gui_sync.png)
-
-![同步演示](./docs/images/demo/gui_history.png)
-
-![后台演示](./docs/images/demo/gui_setup1.png)
-![后台演示](./docs/images/demo/gui_setup2.png)
-![后台演示](./docs/images/demo/gui_setup3.png)
-
 
 ## 如何编写自己的解析插件
 1. example: <site_donate_name.py>
@@ -129,15 +113,9 @@ class Parser(BaseParser):
 2. 将完成的 <site_donate_name.py> 文件放入'./plugins/'目录中.
 3. Done!
 
-
-## 版本控制
-- [2.0.0.0](https://github.com/CorttChan/ArchOctopus/releases/tag/v2.0.0)
-- [1.8.4.0](https://github.com/CorttChan/ArchOctopus/releases/tag/v1.8.4.0)
-
 ## 作者
 [@CorttChan](http://www.cortt.me) - cortt.me@gmail.com
 
 ## 版权
-Copyright (c) CorttChan. All rights reserved.
-
+Copyright (c) CorttChan. All rights reserved.  
 Licensed under the [GPL-3.0](LICENSE) license.

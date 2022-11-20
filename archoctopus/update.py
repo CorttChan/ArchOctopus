@@ -59,7 +59,7 @@ class Update(threading.Thread):
             try:
                 req = httpx.get(url, follow_redirects=True)
                 req.raise_for_status()
-            except (httpx.HTTPStatusError, httpx.ConnectTimeout):
+            except (httpx.HTTPStatusError, httpx.ConnectTimeout, httpx.ConnectError):
                 self.logger.error("update访问失败: %s", url, exc_info=True)
                 continue
 

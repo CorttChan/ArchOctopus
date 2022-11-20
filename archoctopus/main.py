@@ -19,10 +19,18 @@ from archoctopus import constants
 
 if wx.Platform == '__WXMSW__':
     from archoctopus.gui import msw_gui as wx_gui
+
+    # High DIP SET
+    import ctypes
+
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(True)
+    except Exception:
+        pass
 else:
     from archoctopus.gui import mac_gui as wx_gui
 
-from archoctopus.gui import custom_outlinebtn, MyBitmap, svg_bitmap, SYNC, SYNC_DISABLE, PAUSE, RESTART
+from archoctopus.gui import custom_outlinebtn, MyBitmap, svg_bitmap, get_bitmap, SYNC, SYNC_DISABLE, PAUSE, RESTART
 from archoctopus.task import TaskItem
 from archoctopus.database import AoDatabase
 from archoctopus.update import Update, PluginUpdate
@@ -179,11 +187,11 @@ class AoMainFrame(wx_gui.MyFrame):
 
         self.logger = logging.getLogger(constants.APP_NAME)
 
-        self.cfg = wx.GetApp().cfg          # 全局配置对象
-        self.con = wx.GetApp().con          # 数据库连接对象
-        self.netloc = wx.GetApp().netloc    # 任务网络地址
+        self.cfg = wx.GetApp().cfg  # 全局配置对象
+        self.con = wx.GetApp().con  # 数据库连接对象
+        self.netloc = wx.GetApp().netloc  # 任务网络地址
 
-        self.is_auto_clip = True   # 自动粘贴板
+        self.is_auto_clip = True  # 自动粘贴板
         self.previous_url = ""  # 用于判断系统粘贴板中的url是否已使用过
         self.running_task_count = 0  # 用于判断是否存在正在运行的Task实例
         self.proxies = None
@@ -286,12 +294,12 @@ class AoMainFrame(wx_gui.MyFrame):
         """创建任务面板"""
         self.Freeze()  # WindowUpdateLocker-- Freeze panel without flicker
         task_panel = AoTaskPanel(self.panel_5, wx.ID_ANY, **kwargs)
-        task_panel.SetMinSize((-1, 65))
+        task_panel.SetMinSize(self.FromDIP((-1, 65)))
         self.Thaw()  # Re-enables window updating
 
-        if position:    # 1 --> sizer末尾位置
+        if position:  # 1 --> sizer末尾位置
             self.sizer_8.Add(task_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
-        else:           # 0 --> sizer起始位置
+        else:  # 0 --> sizer起始位置
             self.sizer_8.Prepend(task_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
         self.sizer_7.Layout()
 
@@ -314,7 +322,7 @@ class AoMainFrame(wx_gui.MyFrame):
 
         notify.SetIcon(_icon)
 
-        if wx.Platform == '__WXMSW__':      # only works on MSW
+        if wx.Platform == '__WXMSW__':  # only works on MSW
             notify.UseTaskBarIcon(self.tbicon)
 
         # notify.AddAction(link_btn_id, "现在更新")
@@ -490,7 +498,7 @@ class AoMainFrame(wx_gui.MyFrame):
         if hasattr(self, "debug_dlg"):
             pos = self.GetPosition()
             size = self.GetSize()
-            self.debug_dlg.Move(pos[0], pos[1]+size[1])
+            self.debug_dlg.Move(pos[0], pos[1] + size[1])
         event.Skip()
 
     def on_about(self, event):
@@ -702,7 +710,7 @@ class AoDonateDlg(wx_gui.DonateDialog):
         btn.SetBackgroundColour(wx.Colour(0, 174, 239))
 
         bitmap_name = self.id_pair[event.GetId()]
-        self.payment_qr.SetBitmap(MyBitmap(bitmap_name))
+        self.payment_qr.SetBitmap(get_bitmap(bitmap_name))
 
     def on_mouse_over(self, event):
         btn = event.GetEventObject()
@@ -805,7 +813,7 @@ class AoSettingDlg(wx_gui.SettingDialog):
     def on_select_dir(self, event):
         dlg = wx.DirDialog(self, "选择下载文件夹:",
                            style=wx.DD_DEFAULT_STYLE
-                           | wx.DD_DIR_MUST_EXIST
+                                 | wx.DD_DIR_MUST_EXIST
                            # | wx.DD_CHANGE_DIR
                            )
         if dlg.ShowModal() == wx.ID_OK:
@@ -893,12 +901,6 @@ class AoSettingDlg(wx_gui.SettingDialog):
 
 
 class AoHistoryDlg(wx_gui.HistoryDialog):
-
-    if wx.Platform == '__WXMAC__':
-        PRE_PAGE_ITEM_COUNT = 20
-    else:
-        PRE_PAGE_ITEM_COUNT = 15
-
     NORMAL_SQL = "SELECT dir, url, name, download_count, domain, date " \
                  "FROM history " \
                  "ORDER BY id desc " \
@@ -930,6 +932,7 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
         super(AoHistoryDlg, self).__init__(parent)
         self.con = wx.GetApp().con
 
+        self._pre_page_item_count = self.history_listctrl.GetSize().GetHeight() // self.history_listctrl.item_height - 1
         self.cur_page = 1
         self.selected_tags = []
         self.history_dir = {}
@@ -953,9 +956,9 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
     def init_tag(self):
         """初始化标签栏面板"""
         tags_data = self.con.select("SELECT tag FROM tags")
-        tag_bitmap = wx_gui.svg_bitmap(wx_gui.TAG)
+        tag_bitmap = wx_gui.svg_bitmap(wx_gui.TAG).GetBitmapFor(self)
         for tag in tags_data:
-            tag_btn = custom_outlinebtn.PlateButton(self.panel_1, label=tag[0]+" ", bmp=tag_bitmap,
+            tag_btn = custom_outlinebtn.PlateButton(self.panel_1, label=tag[0] + " ", bmp=tag_bitmap,
                                                     style=custom_outlinebtn.PB_STYLE_TOGGLE)
             self.sizer_tags.Add(tag_btn, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
             tag_btn.Bind(wx.EVT_TOGGLEBUTTON, self.on_tag)
@@ -967,8 +970,8 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
         return result[0]
 
     def refresh_page(self):
-        domain_start = (self.cur_page - 1) * self.PRE_PAGE_ITEM_COUNT + 1
-        domain_end = self.cur_page * self.PRE_PAGE_ITEM_COUNT
+        domain_start = (self.cur_page - 1) * self._pre_page_item_count + 1
+        domain_end = self.cur_page * self._pre_page_item_count
         if self.total_items < domain_start:
             self.next_btn.Disable()
             cur_items = "0-0"
@@ -989,7 +992,7 @@ class AoHistoryDlg(wx_gui.HistoryDialog):
         self.history_listctrl.SetFocus()
 
     def history_populate(self):
-        data = self.con.select(self.sql, ((self.cur_page-1)*self.PRE_PAGE_ITEM_COUNT, self.PRE_PAGE_ITEM_COUNT))
+        data = self.con.select(self.sql, ((self.cur_page - 1) * self._pre_page_item_count, self._pre_page_item_count))
         self.history_listctrl.DeleteAllItems()
         self.history_dir.clear()
         self.history_url.clear()
@@ -1117,7 +1120,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
             result = self.con.select_one(sql, (user_id, site.lower()))
         else:
             sql = "SELECT * FROM sync_account WHERE site = ?"
-            result = self.con.select_one(sql, (site.lower(), ))
+            result = self.con.select_one(sql, (site.lower(),))
         return result
 
     def load_boards_info(self, user_id: int, site: str):
@@ -1154,7 +1157,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
             if account_info:
                 # avatar图片
                 if account_info[7]:
-                    avatar_bitmap = get_bitmap_from_embedded(account_info[7], scale=(100, 100))
+                    avatar_bitmap = get_bitmap_from_embedded(account_info[7], scale=self.FromDIP((100, 100)))
                     account_panel.avatar.SetBitmap(avatar_bitmap)
                 # 账户名称
                 account_panel.user_name.SetLabel(account_info[2] or "NnllUser")
@@ -1170,13 +1173,13 @@ class AoSyncDlg(wx_gui.SyncDialog):
             for board_info in self.load_boards_info(user_id, site):
                 # (board_id, site, name, state, total)
                 board_panel = AoBoardPanel(account_panel.boards_panel)
-                board_panel.SetMinSize((176, 176))
+                board_panel.SetMinSize(self.FromDIP((176, 176)))
 
                 # board封面: 单独线程更新board封面,避免Sync_dlg界面载入时间过长和卡顿
                 cache_cover_bitmap = self.GetParent().sync_cover_cache.get((board_info[0], board_info[1]))
-                if cache_cover_bitmap:      # 存在封面缓存
+                if cache_cover_bitmap:  # 存在封面缓存
                     board_panel.board_cover.SetBitmap(cache_cover_bitmap)
-                else:                       # 没有封面缓存
+                else:  # 没有封面缓存
                     self.cover_queue.put((board_panel.GetId(), board_info))
 
                 # board名称
@@ -1210,7 +1213,7 @@ class AoSyncDlg(wx_gui.SyncDialog):
             dlg = wx.DirDialog(self, "选择同步文件夹:",
                                style=wx.DD_DEFAULT_STYLE
                                      | wx.DD_DIR_MUST_EXIST
-                                     # | wx.DD_CHANGE_DIR
+                               # | wx.DD_CHANGE_DIR
                                )
             dlg.ShowModal()
             self.sync_dir = dlg.GetPath()
@@ -1512,13 +1515,13 @@ class AoTaskPanel(wx_gui.TaskPanel):
         btn_size = btn.GetSize()
         popup_size = popup_win.GetSize()
 
-        popup_win.Position(pos, (0, btn_size[1]-popup_size[1]))
+        popup_win.Position(pos, (0, btn_size[1] - popup_size[1]))
 
         if wx.Platform == '__WXMAC__':  # MAC上PopupTransientWindow无法获取焦点，直接调用了OnDismiss函数
             popup_win.Show()
             popup_win.Raise()
             popup_win.tags_edit_ctrl.SetFocus()
-        else:   # 正常调用Popup函数显示
+        else:  # 正常调用Popup函数显示
             popup_win.Popup()
 
     def update_tags(self, tags: list):
@@ -1702,7 +1705,7 @@ def main():
     # level = "DEBUG"
 
     # 日志配置
-    log_file = os.path.join(os.path.dirname(__file__), constants.APP_NAME+".log")
+    log_file = os.path.join(os.path.dirname(__file__), constants.APP_NAME + ".log")
     log_conf = {
         "version": 1,
         "disable_existing_loggers": False,
