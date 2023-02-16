@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 
 from archoctopus.utils import retry, get_docs_dir
 from archoctopus.constants import APP_NAME
+
 # from archoctopus.pdf import PDF
 
 
@@ -42,11 +43,6 @@ def get_domain_from_url(url: str):
     return domain.capitalize()
 
 
-def _path(route: typing.AnyStr, func: typing.Callable, title: typing.AnyStr = "", Pattern=None):
-    if not callable(func):
-        raise TypeError("func must be a callable")
-
-
 def path():
     """url路径路由映射函数"""
     pass
@@ -55,19 +51,6 @@ def path():
 def re_path():
     """正则路由路由映射函数"""
     pass
-
-
-def route(pattern: typing.AnyStr):
-    """解析函数注册器"""
-
-    def decorator(func):
-        def wrapper(self, *args, **kwargs):
-            if pattern:
-                self.urlpatterns.append((pattern, func))
-            return func(self, *args, **kwargs)
-        return wrapper
-
-    return decorator
 
 
 class Extractor:
@@ -85,11 +68,13 @@ class Extractor:
         'attr_key': re.compile("data-(src|original|lazy|load)")
     }
 
-    def __init__(self, name, url):
+    def __init__(self, name: str, url: str):
+        self.friend_name = name or get_domain_from_url(url)
         self.url = url
-        self.friend_name = name
+        self.urlpatterns = []   # url匹配模式
 
-        self.urlpatterns = []
+        self._url_parser = UrlParser(url)
+        self._sub_rules = []   # 自定义图片替换规则
 
     def _parse(self, *args, **kwargs) -> typing.Generator[str, None, None]:
         html = kwargs.get("response").text
@@ -117,13 +102,16 @@ class Extractor:
             # 使用正则表达式替换指定了尺寸的图片链接, 通常指定尺寸后的图片为缩小图片, 通过去除指定尺寸获取原始图片链接
             # e.g. https://afasiaarchzine.com/wp-content/uploads/2021/12/Reiulf-Ramstad-.-Statens-Muse
             # um-for-Kunst-.-Thy-afasia-2-250x250.jpg
-            yield self.regexps["raw_url"].sub("", uri)
+            img_uri = self.regexps["raw_url"].sub("", uri)
+            raw_url = self._url_parser.get_join_path_url(img_uri)
+            yield {"item_url": raw_url}
 
     def __call__(self, *args, **kwargs) -> typing.Generator:
         """处理解析"""
         for pattern, parse_func in self.urlpatterns:
             match = re.match(pattern, self.url)
             if match:
+                kwargs.update(match.groupdict())
                 return parse_func(*args, **kwargs)
         else:
             return self._parse(*args, **kwargs)
@@ -136,6 +124,10 @@ class Extractor:
             return func
 
         return wrapper
+
+    def add_rules(self, *args, **kwargs):
+        """添加自定义图片替换规则"""
+        self._sub_rules.append()
 
 
 class UrlParser:
@@ -190,7 +182,6 @@ class UrlParser:
 
 
 class Parser:
-
     regexps = {
         # 匹配srcset属性中多个图片值
         'srcset_urls': re.compile("(\\S+)(\\s+([\\d.]+)[xw])?(\\s*(?:,|$))"),
@@ -247,7 +238,8 @@ class BaseParser(threading.Thread):
                  running_event: threading.Event,
                  threads_count: int,
                  cookies: CookieJar = None,
-                 proxies: [str, None] = None):
+                 proxies: [str, None] = None,
+                 extractor=None):
 
         super().__init__()
         self.url = url  # 解析地址
@@ -266,10 +258,14 @@ class BaseParser(threading.Thread):
         self.count = 0  # 统计解析文件总数
         self.download_thread_count = threads_count  # 下载线程数
 
-        self.task_name = url  # 初始化任务名(用于在TaskPanel面板显示任务名称)
-        self.friend_name = get_domain_from_url(url)
+        if extractor is None:
+            extractor = Extractor(name="", url=url)
+        self.extractor = extractor  # 图片解析器
 
-        self.url_parser = UrlParser(self.url)  # url解析
+        self.task_name = url  # 初始化任务名(用于在TaskPanel面板显示任务名称)
+        self.friend_name = self.extractor.friend_name
+
+        # self.url_parser = UrlParser(self.url)  # url解析
 
         # ---- logger ----
         self.logger = logging.getLogger(APP_NAME)
@@ -292,9 +288,6 @@ class BaseParser(threading.Thread):
             self.root_dir = cfg.Read("/General/download_dir", defaultVal=get_docs_dir())  # 下载根目录
             self.is_index = cfg.ReadBool("/Filter/is_index", defaultVal=True)  # 判断是否给图片添加序号的信号量
             self.is_pdf = cfg.ReadBool("/General/pdf_output", defaultVal=False)  # 判断是否输出页面PDF
-
-        # ---- callback ----
-        self.urlpatterns = []
 
     def get_json_headers(self, **kwargs):
         headers = {
@@ -521,6 +514,7 @@ class BaseParser(threading.Thread):
                 self.task_name, sub_path = self.get_title(html)  # 默认解析获取的标题, 后续可以根据具体分类重新赋值(可选)
 
                 # 选择提取器, 解析页面
+                # parse_results: typing.Generator = self.call_parse(self.route, html=html, response=response)
                 parse_results: typing.Generator = self.call_parse(self.route, html=html, response=response)
 
             else:
