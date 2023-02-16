@@ -743,7 +743,8 @@ class AoSettingDlg(wx_gui.SettingDialog):
                                                          flag="digit", default="3"))
         self.clip_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/auto_clip", value_type="bool",
                                                             default=True))
-        self.pdf_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/pdf_output", value_type="bool"))
+        self.pdf_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/pdf_output", value_type="bool",
+                                                           default=False))
         self.taskbar_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/minimized", value_type="bool",
                                                                default=True))
         self.update_toggle_ctrl.SetValidator(SettingValidator(self.cfg, "/General/auto_update", value_type="bool",
@@ -781,6 +782,13 @@ class AoSettingDlg(wx_gui.SettingDialog):
                               ".bmp": self.bmp_checkbox,
                               ".webp": self.webp_checkbox}
 
+        # pdf radiobox
+        self.group_pdf_ctrls = []
+        self.group_pdf_ctrls.append(self.radio_btn_1)
+        self.group_pdf_ctrls.append(self.radio_btn_2)
+        self.group_pdf_ctrls.append(self.radio_btn_3)
+        self.group_pdf_ctrls.append(self.radio_btn_4)
+
         self.init_set_properties()
 
     def init_set_properties(self):
@@ -809,6 +817,16 @@ class AoSettingDlg(wx_gui.SettingDialog):
             self.image_all_type.SetValue(True)
             for _check in self.filter_images.values():
                 _check.Disable()
+
+        # pdf output and format
+        is_pdf = self.cfg.ReadBool("/General/pdf_output", defaultVal=False)
+        pdf_format = self.cfg.Read("/General/pdf_format", defaultVal="txt")
+        for _rb in self.group_pdf_ctrls:
+            _rb.Enable(is_pdf)
+            if _rb.GetLabel() == pdf_format:
+                _rb.SetValue(True)
+            else:
+                _rb.SetValue(False)
 
     def on_select_dir(self, event):
         dlg = wx.DirDialog(self, "选择下载文件夹:",
@@ -883,6 +901,17 @@ class AoSettingDlg(wx_gui.SettingDialog):
         self.checkboxes.clear()
         for _check in self.filter_images.values():
             _check.Disable()
+
+    # Override the method "on_pdf"
+    def on_pdf(self, event):
+        is_pdf = event.IsChecked()
+        for _rb in self.group_pdf_ctrls:
+            _rb.Enable(is_pdf)
+
+    # Override the method "on_pdf_format"
+    def on_pdf_format(self, event):
+        radio_selected = event.GetEventObject()
+        self.change.update({"/General/pdf_format": radio_selected.GetLabel()})
 
     # Override the method "on_filter_image_type"
     def on_filter_image_type(self, event):
@@ -1402,9 +1431,9 @@ class AoTaskPanel(wx_gui.TaskPanel):
         sql = "UPDATE history SET status=?, total_count=? WHERE url=?"
         self.con.execute(sql, (1, imgs_sum, self.task_info["url"]))
 
-    def call_task_name(self, task_dir: str):
+    def call_task_name(self, task_dir: str, task_name: str):
         """注册解析后得到的任务友好名称"""
-        task_name = os.path.basename(task_dir)
+        # task_name = os.path.basename(task_dir)
         self.task_info["name"] = task_name
         self.task_name.SetLabel(task_name)
         # 更新数据库
