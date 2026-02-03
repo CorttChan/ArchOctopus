@@ -11,7 +11,7 @@
 
 import os
 import logging
-from typing import Callable, List, Dict, Tuple
+from typing import Callable, List, Dict, Tuple, Union
 
 import wx       # TODO: 使用configparser库替换掉wx.FileConfig
 from PIL import Image, UnidentifiedImageError
@@ -40,21 +40,30 @@ def register_filter(filter_name: str) -> Callable:
 
 
 @register_filter("image_type")
-def filter_type(file, types: str) -> bool:
-    file_type = file.split(".")[-1]
-    if file_type in types.split(","):
+def filter_type(item: Union[str, Dict], types: str) -> bool:
+    if isinstance(item, Dict):
+        f_type = item.get("type")
+    else:
+        f_type = item.split(".")[-1]
+
+    if f_type in types.split(","):
         return True
+
     return False
 
 
 @register_filter("image_size")
-def filter_size(file, width, height) -> bool:
-    try:
-        image = Image.open(file)
-    except (UnidentifiedImageError, FileNotFoundError):
-        return True
+def filter_size(item: Union[str, Dict], width: int, height: int) -> bool:
+    if isinstance(item, Dict):
+        f_width = item.get("width")
+        f_height = item.get("height")
+    else:
+        try:
+            image = Image.open(item)
+            f_width, f_height = image.size
+        except (UnidentifiedImageError, FileNotFoundError):
+            return True
 
-    f_width, f_height = image.size
     if f_width < width or f_height < height:
         return True
 
@@ -62,14 +71,18 @@ def filter_size(file, width, height) -> bool:
 
 
 @register_filter("file_size")
-def filter_file_size(file, size) -> bool:
-    try:
-        f_size = os.path.getsize(file)
-    except FileNotFoundError:
-        return True
+def filter_file_size(item: Union[str, Dict], size: int) -> bool:
+    if isinstance(item, Dict):
+        f_size = item.get("size")
+    else:
+        try:
+            f_size = os.path.getsize(item)
+        except FileNotFoundError:
+            return True
 
     if f_size < size:
         return True
+
     return False
 
 

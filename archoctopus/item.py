@@ -27,4 +27,5 @@ class ItemData(TypedDict):
     index_reset:    NotRequired[bool]
     width:          NotRequired[int]
     height:         NotRequired[int]
-    bytes:          NotRequired[int]
+    size:           NotRequired[int]
+    type:           NotRequired[str]
