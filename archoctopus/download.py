@@ -4,24 +4,20 @@ ArchOctopus 下载模块
 
 import threading
 import os
-import re
-from queue import Queue
 import logging
 from http.cookiejar import CookieJar
+from collections import namedtuple
+from urllib.parse import urlsplit
+from queue import Queue
 
-import wx
-from httpx import Client
+from httpx import Client, ConnectError, TimeoutException
 
-from archoctopus.utils import \
-    retry, \
-    get_name_from_url, \
-    get_img_format, \
-    get_file_type, \
-    get_file_bytes, \
-    get_file_size, \
-    is_downloaded
+from archoctopus.filter import Filter
+from archoctopus.utils import retry
+from archoctopus.constants import APP_NAME, UserAgent
 
-from archoctopus.constants import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
 
 
 class Downloader(threading.Thread):
@@ -30,194 +26,113 @@ class Downloader(threading.Thread):
     """
 
     def __init__(self,
-                 window,
-                 download_queue: Queue,
-                 pause_event: threading.Event,
-                 running_event: threading.Event,
+                 task_id: int,
+                 tasks_queue: Queue,
+                 msgs_queue: Queue,
+                 event: threading.Event,
+                 item_filter: Filter,
                  cookies: CookieJar = None,
-                 proxies: [str, None] = None,):
+                 proxies: str = None,):
         super(Downloader, self).__init__()
 
-        self.window = window
-        self.queue = download_queue
-        self.pause_event = pause_event  # 用于暂停线程的标识
-        self.running_event = running_event  # 用于停止线程的标识
+        self.task_id = task_id
+        self.tasks_queue = tasks_queue
+        self.msgs_queue = msgs_queue
+        self.event = event
+        self.filter = item_filter
+        self.session = Client(headers={'User-Agent': UserAgent}, cookies=cookies, proxy=proxies)
 
-        # ---- logger ----
-        self.logger = logging.getLogger(APP_NAME)
-
-        # ---- request ----
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0',
-        }
-        self.session = Client(headers=headers, cookies=cookies, proxies=proxies)
-
-        # ------ cfg ------
-        cfg = wx.GetApp().cfg
-        self.cfg_size = (cfg.ReadInt("/Filter/min_width", defaultVal=0),
-                         cfg.ReadInt("/Filter/min_height", defaultVal=0))
-        self.cfg_bytes = (cfg.ReadInt("/Filter/min_size", defaultVal=0),
-                          cfg.ReadInt("/Filter/max_size", defaultVal=0))
-        self.cfg_type = cfg.Read("/Filter/type", defaultVal="")
-
-    def _filter_size(self, file_size: tuple):
-        """过滤图片尺寸"""
-        if file_size is None:
-            return False
-        if any(self.cfg_size) and not all([x[0] >= x[1] for x in zip(file_size, self.cfg_size)]):
-            self.logger.debug("filter_size_True: %s", file_size)
-            return True
-
-    def _filter_type(self, file_type: tuple):
-        """过滤图片类型"""
-        if self.cfg_type and file_type not in self.cfg_type.split(","):
-            self.logger.debug("filter_type_True: %s", file_type)
-            return True
-
-    def _filter_bytes(self, file_bytes: int):
-        """过滤图片大小"""
-        if file_bytes is None:
-            return False
-        if any(self.cfg_bytes):
-            if file_bytes < self.cfg_bytes[0] or file_bytes > self.cfg_bytes[1]:
-                self.logger.debug("filter_bytes_True: %s", file_bytes)
-                return True
-
-    def filter(self, result: tuple):
-        """
-        ArchOctopus 过滤器
-        过滤图片尺寸, 类型以及文件大小。
-        :param result:
-        :return:
-        """
-        if not result:
-            return
-        else:
-            tmp_file, file = result
-
-        file_type: tuple = get_file_type(file)
-        file_size: tuple = get_file_size(tmp_file)
-        file_bytes = get_file_bytes(tmp_file)
-
-        try:
-            if self._filter_type(file_type[1]) or self._filter_size(file_size) or self._filter_bytes(file_bytes):
-                self.logger.debug("过滤文件: %s", file)
-                os.remove(tmp_file)
-            else:
-                os.rename(tmp_file, file)
-        except (PermissionError, FileExistsError) as e:
-            # os.remove(tmp_file)
-            self.logger.error(e)
-
-        return file_type, file_size, file_bytes
-
-    @ retry(times=3)
-    def _download(self, **kwargs):
+    @retry(max_attempts=3, delay=1.0, exceptions=(ValueError, ConnectError, TimeoutException))
+    def _download(self, item: dict) -> bool:
         """
         下载函数
-        :param path:
-        :param url:
-        :return: tuple(file_type, file_bytes, file_size, tmp_file)
+        :param item:
+        :return: None
         """
-        url = kwargs["item_url"]
+        url = item["url"]
         # 链接内嵌图片 data:image, 暂做忽略处理。
         if url.startswith("data:image"):
             # self.embedded_img(url)
-            return
+            return False
 
-        raw_name = kwargs.get("name")
-        if raw_name:
-            name, suffix = os.path.splitext(raw_name)
-            suffix = suffix.lower() if suffix else ".jpeg"
-        else:
-            name, suffix = get_name_from_url(url)
-
-        index = kwargs.get("item_index")
-        name = f"{index}_{name}" if index else name
-
-        folder = kwargs.get("task_dir", "")
+        name = item.get("name") or os.path.basename(urlsplit(url).path)
+        name = f"{index}_{name}" if (index:=item.get("index")) else name
 
         # 判断文件是否已存在
-        is_downloaded_file = is_downloaded(folder, name, suffix=suffix)
-        if is_downloaded_file:
-            self.logger.debug("图片已下载: %s", is_downloaded_file)
-            return
+        file = os.path.join(item["path"], name)
+        if os.path.exists(file):
+            logger.debug("图片已下载: %s", file)
+            return True
+        else:
+            os.makedirs(item["path"], exist_ok=True)
 
         # 请求响应内容
-        tmp_file = os.path.join(folder, name + '.tmp')
-        tmp_file_size = get_file_bytes(tmp_file)
-
-        if tmp_file_size:
-            self.logger.debug('tmp_file length: %s', tmp_file_size)
-            headers = {'Range': f"bytes={tmp_file_size}-"}
+        tmp_file = file + '.tmp'
+        if os.path.isfile(tmp_file):
+            tmp_file_size = os.path.getsize(file)
         else:
-            headers = None
-        try:
-            with self.session.stream("GET", url, headers=headers) as s:
-                self.logger.debug("请求状态 : %s, %s", s.status_code, url)
-                if s.status_code == 200:
-                    mode = "wb"
-                elif s.status_code == 206:
-                    mode = "ab"
-                elif s.status_code == 416:
-                    self.logger.error("416 错误 – 所请求的范围无法满足: %s", url)
-                    os.remove(tmp_file)
-                    return
-                else:
-                    self.logger.error("响应码错误: %s, %s", s.status_code, url)
-                    return
+            tmp_file_size = 0
+        headers = {'Range': f"bytes={tmp_file_size}-"}
 
-                with open(tmp_file, mode) as f:
-                    for chunk in s.iter_bytes(chunk_size=10240):
-                        if chunk:
-                            f.write(chunk)
-                    f.flush()
+        with self.session.stream("GET", url, headers=headers) as s:
+            logger.debug("请求状态 : %s, %s", s.status_code, url)
+            if s.status_code == 200:
+                mode = "wb"
+            elif s.status_code == 206:
+                mode = "ab"
+            elif s.status_code == 416:
+                logger.error("416 错误 – 所请求的范围无法满足: %s", url)
+                os.remove(tmp_file)
+                raise ValueError("416请求错误: 临时文件大小(tmp_file_size)数据超出请求范围")
+            else:
+                logger.error("响应码错误: %s, %s", s.status_code, url)
+                return False
 
-                # 获取正确的后缀名
-                suffix = get_img_format(tmp_file)
-                file = re.sub("\\.tmp$", suffix, tmp_file)
-        except FileExistsError as e:
-            self.logger.error("文件已存在: %s", e)
-            os.remove(tmp_file)
-        except FileNotFoundError as e:  # windows默认256个字符路径限制(MAX_PATH)
-            self.logger.error("FileNotFoundError错误: %s", e)
-        except AttributeError as e:
-            self.logger.error("AttributeError错误: %s", e)
-        else:
-            return tmp_file, file
+            with open(tmp_file, mode) as f:
+                for chunk in s.iter_bytes(chunk_size=10240):
+                    if chunk:
+                        f.write(chunk)
+                f.flush()
+
+            item["path"] = tmp_file
+
+        return True
 
     def run(self):
-        while self.running_event.is_set():
-            self.pause_event.wait()  # 为True时立即返回, 为False时阻塞直到内部的标识位为True后返回
-            data = self.queue.get()
+        Msg = namedtuple("Msg", "msg_type msg task_id", defaults=(self.task_id, ))
+
+        while True:
+            self.event.wait()
+            item = self.tasks_queue.get()
 
             # 下载线程接受到退出信号,正常退出.
-            if data is None:
-                self.logger.info("download completed: 队列完成")
-                self.queue.task_done()
+            if item is None:
+                logger.info(f"下载线程{self.name} -- 关闭")
+                self.tasks_queue.task_done()
                 break
 
             # 下载前过滤
-            item_size = data.get("size")
-            item_bytes = data.get("bytes")
-
-            if self._filter_size(item_size) or self._filter_bytes(item_bytes):
-                self.queue.task_done()
-                self.logger.info("download completed: %s", data["item_url"])
-                wx.CallAfter(self.window.call_refresh_gauge, data["item_url"], None)  # 更新面板信息
+            if self.filter(item):
+                logger.info("download completed: %s", item["url"])
+                self.msgs_queue.put(Msg("task_download_filtered", (item["url"], )))
+                self.tasks_queue.task_done()
                 continue
 
             # 下载
-            result = self._download(**data)
+            result = self._download(item)
 
-            # 下载后过滤
-            filter_result = self.filter(result)
-            wx.CallAfter(self.window.call_refresh_gauge, data["item_url"], filter_result)  # 更新面板信息
+            if result:
+                if self.filter(item):
+                    os.remove(item["path"])
+                    self.msgs_queue.put(Msg("task_download_filtered", (item["url"],)))
+                else:
+                    os.rename(item["path"], item["path"][:-4])
+                    self.msgs_queue.put(Msg("task_download_success", (item["url"], )))
+            else:
+                self.msgs_queue.put(Msg("task_download_failed", (item["url"],)))
 
-            self.queue.task_done()
-            self.logger.info("download completed: %s", data["item_url"])
+            self.tasks_queue.task_done()
 
-        # 退出时关闭请求连接
+        self.msgs_queue.put(Msg("task_download_finish", (self.name, )))
+
         self.session.close()
-        # 更新任务线程计数
-        wx.CallAfter(self.window.call_thread_done)
